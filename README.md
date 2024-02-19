@@ -7,7 +7,7 @@
 
 Spectral Micro is a brushless motor controller designed to offer affordable and capable hardware, complemented by open-source software. 
 * It supports multiple firmware options and integrates a 14-bit magnetic encoder, inline current sensing, CAN and UART data interface, and provides support for position, velocity, torque, and impedance control.
-* It is everything you need for developing high-performance robotic solutions is included.
+* Everything you need for developing high-performance robotic solutions is included.
 * It is ideal for gimbal motors, quadrupeds, robotic arms, and grippers. Check the list of tested motors here!
 
 # Where to buy?
@@ -20,7 +20,7 @@ Spectral firmware is located here. To install it follow this guide!
 
 
 # Documentation:
-- [Official website](https://source-robotics.com)
+- [Official website](https://source-robotics.com/products/spectral-micro-bldc-controller)
 - [DOCS](https://source-robotics.github.io/PAROL-docs/)
 - GUI software
 - Join [Discord](https://discord.com/invite/prjUvjmGpZ ) community!
