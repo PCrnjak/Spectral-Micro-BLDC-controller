@@ -20,10 +20,12 @@ Spectral firmware is located here. To install it follow this guide!
 
 
 # Documentation:
+- [Discord](https://discord.com/invite/prjUvjmGpZ )
+- [Forum](https://discourse.source-robotics.com/)
+- [Blog](https://source-robotics.com/blogs/blog)
 - [Official website](https://source-robotics.com/products/spectral-micro-bldc-controller)
 - [DOCS](https://source-robotics.github.io/PAROL-docs/)
 - [GUI software](https://github.com/PCrnjak/Spectral-motor-GUI)
-- Join [Discord](https://discord.com/invite/prjUvjmGpZ ) community!
 
 # More about Spectral BLDC motor controllers
 - Example projects - coming soon
