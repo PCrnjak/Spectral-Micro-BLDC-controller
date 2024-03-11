@@ -20,9 +20,7 @@ Spectral firmware is located here. To install it follow this guide!
 
 
 # Documentation:
-- [Discord](https://discord.com/invite/prjUvjmGpZ )
-- [Forum](https://discourse.source-robotics.com/)
-- [Blog](https://source-robotics.com/blogs/blog)
+
 - [Official website](https://source-robotics.com/products/spectral-micro-bldc-controller)
 - [DOCS](https://source-robotics.github.io/PAROL-docs/)
 - [GUI software](https://github.com/PCrnjak/Spectral-motor-GUI)
@@ -35,6 +33,9 @@ Spectral firmware is located here. To install it follow this guide!
 - [Instagram](https://www.instagram.com/5arcrnjak/)
 - [DOCS](https://source-robotics.github.io/PAROL-docs/)
 - [Twitter](https://twitter.com/SourceRobotics)
+- [Discord](https://discord.com/invite/prjUvjmGpZ )
+- [Forum](https://discourse.source-robotics.com/)
+- [Blog](https://source-robotics.com/blogs/blog)
 
 
 
