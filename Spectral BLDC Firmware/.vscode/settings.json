@@ -1,0 +1,29 @@
+{
+    "files.associations": {
+        "11_3_pwm_adc_working,cpp": "cpp",
+        "array": "cpp",
+        "deque": "cpp",
+        "string": "cpp",
+        "unordered_map": "cpp",
+        "vector": "cpp",
+        "string_view": "cpp",
+        "initializer_list": "cpp",
+        "can_good": "c",
+        "random": "cpp",
+        "optional": "cpp",
+        "istream": "cpp",
+        "ostream": "cpp",
+        "system_error": "cpp",
+        "functional": "cpp",
+        "tuple": "cpp",
+        "type_traits": "cpp",
+        "utility": "cpp",
+        "cmath": "cpp",
+        "can_good_nop": "c",
+        "nop_nop_edit": "c",
+        "main_code_4_11_2023": "cpp",
+        "main_26_11": "cpp",
+        "cstddef": "cpp",
+        "*.tcc": "cpp"
+    }
+}
