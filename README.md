@@ -1,5 +1,5 @@
 # Spectral micro BLDC controller
-[![License: GPLv3](https://img.shields.io/badge/license-GPLv3-blue)](https://opensource.org/license/gpl-3-0/)
+[![License: GPLv3](https://img.shields.io/badge/license-GPLv3-blue)](https://opensource.org/license/gpl-3-0/)  ![Issues](https://img.shields.io/github/issues/PCrnjak/Spectral-Micro-BLDC-controller) ![release](https://img.shields.io/github/v/release/PCrnjak/Spectral-Micro-BLDC-controller)
 
 <img src="Photos/bldc_grouped.png" alt="drawing" width="5000"/>
 
