@@ -338,6 +338,7 @@ void Update_IT_callback_calib()
   static int calib_step_delay = 0;
   static int calib_dir_pole_pair = 0;
   static int Phase_order_step = 0;
+  static int KV_step = 0;
 
   static int tick_cnt = 0;
   static float resistance_voltage = 0;
@@ -366,6 +367,11 @@ void Update_IT_callback_calib()
   static int64_t Controller_velocity_RPM[4] = {0, 0, 0};
   static int Spin_duration = 8500; // In interrupt ticks = 8500 * 200us = 1.7s
   static int Start_position_phase = 0;
+
+  static int KV_ticks = 0;
+  static int KV_duration = 5000;
+  static int64_t KV_speed_accumulator = 0;
+  static int64_t KV_current_accumulator = 0;
 
   // Open loop
   static float theta_SIM = 0;
@@ -709,6 +715,12 @@ Open loop spin; Get pole pair and dir
     }
   }
 
+
+
+
+
+
+
   /// @todo Get it working for any phase order
   /////////////////////////////////////////////////////////////////////
   /*
@@ -872,8 +884,46 @@ Calculate Correct phase order
     }
   }
 
+
+/// Calculate Kt, KV and Flux linkage
+  if (Phase_order_step == 1 && KV_step == 0 && controller.Calib_error == 0)
+  {
+
+    if(KV_ticks <= KV_duration){
+      PID.Iq_setpoint = 1250;
+      Collect_data();
+      Torque_mode();
+      dq0_abc_variables(controller.Electric_Angle);
+      dq0_fast_int(controller.Sense1_mA, controller.Sense2_mA, controller.Sense3_mA, &FOC.Id, &FOC.Iq);
+      KV_ticks = KV_ticks + 1;
+      float rpm_speed = (controller.Velocity_Filter * 60) / 16384;
+      KV_speed_accumulator = KV_speed_accumulator + rpm_speed;
+      KV_current_accumulator = KV_current_accumulator + FOC.Iq;
+    
+    } else{
+
+      float rpm_filtered = KV_speed_accumulator / KV_duration;
+      float current_filtered = KV_current_accumulator / KV_duration;
+      int load_correction = PID.Iq_setpoint / (PID.Iq_setpoint - current_filtered);
+      float KV_value = (rpm_filtered / (controller.VBUS_mV / 1000)) * load_correction;
+      controller.KV = KV_value;
+      controller.Kt = float(8.27) / controller.KV;
+      controller.flux_linkage = (float)2 / 3 * (float)controller.Kt / (float)controller.pole_pairs;
+
+      controller.temp1 = KV_value;
+      pwm_set(PWM_CH1, 0, 13);
+      pwm_set(PWM_CH2, 0, 13);
+      pwm_set(PWM_CH3, 0, 13);
+      KV_step = 1;
+      controller.KV_status = 2;
+    }
+  
+
+  }
+
+
   // If we get to last step without error
-  if (Phase_order_step == 1)
+  if (KV_step == 1)
   {
     // Detach calibration interrupt routine
     Ticker_detach(TIM3);
@@ -909,6 +959,10 @@ Calculate Correct phase order
     tick_tick = 0;
     open_loop_delay = 0;
     resistance_voltage = 0;
+    KV_ticks = 0;
+    KV_speed_accumulator = 0;
+    KV_current_accumulator = 0;
+    KV_step = 0;
   }
 
   // If there is error
@@ -948,6 +1002,10 @@ Calculate Correct phase order
     tick_tick = 0;
     open_loop_delay = 0;
     resistance_voltage = 0;
+    KV_ticks = 0;
+    KV_speed_accumulator = 0;
+    KV_current_accumulator = 0;
+    KV_step = 0;
   }
 }
 
@@ -1001,7 +1059,7 @@ void Open_loop_step(int step, int voltage)
 void Calib_report(Stream &Serialport)
 {
 
-  static bool print_flag[] = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
+  static bool print_flag[] = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
 
   if (controller.Calibration != 0)
   {
@@ -1158,28 +1216,36 @@ void Calib_report(Stream &Serialport)
         Serialport.print(controller.Phase_order);
         Serialport.println(" ");
         Serialport.println("Phase order is good!");
-        /*
-        Serialport.print("Kt = ");
-        Serialport.print(controller.Kt, 4);
-        Serialport.print("Nm/A");
-        Serialport.println(" ");
-        Serialport.print("KV = ");
-        Serialport.print(controller.KV);
-        Serialport.print("RPM/V");
-        Serialport.println(" ");
-        Serialport.print("Flux linkage = ");
-        Serialport.print(controller.flux_linkage, 5);
-        Serialport.println("Wb");
-        */
       }
-      // Settings used
       print_flag[6] = 1;
     }
+
+
+    // Kt call
+    if (controller.KV_status != 0 && print_flag[7] == 0)
+    {
+      if (controller.KV_status == 2)
+      {
+      Serialport.print("KV is: ");
+      Serialport.print(controller.KV,5);
+      Serialport.println(" ");
+      Serialport.print("Kt is: ");
+      Serialport.print(controller.Kt,5);
+      Serialport.println(" ");
+      Serialport.print("Flux linkage is: ");
+      Serialport.print(controller.flux_linkage,6);
+      Serialport.println(" ");
+      Serialport.print("----------------");
+      }
+
+      print_flag[7] = 1;
+    }
+
 
     // If calib failed
     // Set clalibration status to 0 (go outside of calibration) set calibrated flag to 0 and go idle.
     // Also report error.
-    if (controller.Calibration == 2 && print_flag[7] == 0)
+    if (controller.Calibration == 2 && print_flag[8] == 0)
     {
       Serialport.print("Calibration failed!");
       Serialport.println(" ");
@@ -1187,7 +1253,7 @@ void Calib_report(Stream &Serialport)
       Serialport.println(" ");
       controller.Controller_mode = 0;
       // Settings used
-      print_flag[7] = 1;
+      print_flag[8] = 1;
       Ticker_detach(TIM3);
       Ticker_init(TIM3, LOOP_FREQ, IT_callback);
       controller.Error = 0;
@@ -1202,6 +1268,7 @@ void Calib_report(Stream &Serialport)
       controller.Open_loop_cal_status = 0;
       controller.Kt_cal_status = 0;
       controller.Phase_order_status = 0;
+      controller.KV_status = 0;
       for (int i = 0; i < sizeof(print_flag) / sizeof(print_flag[0]); i++)
       {
         print_flag[i] = 0; // Set each element to 0
@@ -1211,8 +1278,9 @@ void Calib_report(Stream &Serialport)
     // If calib was success
     // Set clalibration status to 0 (go outside of calibration)
     // set calibrated flag to 1 and enter closed loop mode (Idle) if there are no errors.
-    if (controller.Calibration == 3 && print_flag[8] == 0)
+    if (controller.Calibration == 3 && print_flag[9] == 0)
     {
+
       Serialport.print("Calibration success!");
       Serialport.println(" ");
       Serialport.print("Save config with #Save");
@@ -1223,7 +1291,7 @@ void Calib_report(Stream &Serialport)
       Serialport.println(" ");
       controller.Controller_mode = 0;
       // Settings used
-      print_flag[8] = 1;
+      print_flag[9] = 1;
       Ticker_detach(TIM3);
       Ticker_init(TIM3, LOOP_FREQ, IT_callback);
       controller.Error = 0;
@@ -1238,6 +1306,7 @@ void Calib_report(Stream &Serialport)
       controller.Open_loop_cal_status = 0;
       controller.Kt_cal_status = 0;
       controller.Phase_order_status = 0;
+      controller.KV_status = 0;
       for (int i = 0; i < sizeof(print_flag) / sizeof(print_flag[0]); i++)
       {
         print_flag[i] = 0; // Set each element to 0

@@ -137,6 +137,7 @@ typedef struct
     volatile int Open_loop_cal_status = 0;
     volatile int Kt_cal_status = 0;
     volatile int Phase_order_status = 0;
+    volatile int KV_status = 0;
 
     // Cyclic UART
     volatile int cyclic = 0;        // If 1 we Periodically send messages without request from host.
