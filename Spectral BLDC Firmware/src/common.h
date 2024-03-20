@@ -90,8 +90,8 @@ typedef struct
 
     volatile int Termistor_on_off = 0; // 0 is off 1 is on
 
-    volatile int Max_temperature = 125; // Max temperature in degrees
-    volatile int Min_temperature = -40; // Min temperature in degrees
+    volatile int Max_temperature = 75; // Max temperature in degrees
+    volatile int Min_temperature = -20; // Min temperature in degrees
 
     volatile int Max_Vbus = 29500; // Max vbus voltage in mV
     volatile int Min_Vbus = 9000;  // Min vbus voltage in mV
