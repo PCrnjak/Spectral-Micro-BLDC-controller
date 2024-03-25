@@ -32,7 +32,7 @@ Spectral firmware is located here. To install it follow this guide!
 - [Source robotics website](https://www.youtube.com/channel/UCp3sDRwVkbm7b2M-2qwf5aQ)
 - [Youtube](https://www.youtube.com/channel/UCp3sDRwVkbm7b2M-2qwf5aQ)
 - [Hackaday](https://hackaday.io/project/191860-parol6-desktop-robotic-arm)
-- [Instagram](https://www.instagram.com/5arcrnjak/)
+- [Instagram](https://www.instagram.com/source_robotics/)
 - [DOCS](https://source-robotics.github.io/Spectral-BLDC-docs/)
 - [Twitter](https://twitter.com/SourceRobotics)
 - [Discord](https://discord.com/invite/prjUvjmGpZ )
