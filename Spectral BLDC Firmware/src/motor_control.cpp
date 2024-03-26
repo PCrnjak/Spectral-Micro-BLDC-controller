@@ -160,7 +160,7 @@ void IT_callback(void)
   #endif
 
   /*Sample temperature every 15000 ticks; If enabled*/
-  if (controller.Termistor_on_off == 1)
+  if (controller.Thermistor_on_off == 1)
   {
     static int temperature_tick = 0;
     if (temperature_tick >= 15000)
@@ -202,7 +202,7 @@ void IT_callback(void)
   /* Check for errors, If errors are present go idle  */
 
   ///  Check termistor
-  if (controller.Termistor_on_off == 1)
+  if (controller.Thermistor_on_off == 1)
   {
     if (controller.TEMP_DEG < controller.Min_temperature || controller.TEMP_DEG > controller.Max_temperature)
     {
@@ -1812,7 +1812,7 @@ void Gripper_mode()
     PID.Velocity_setpoint = -vel_sepoint;
   }
 
-  if (Gripper.action_status == 1 && Gripper.calibrated == 1 && Gripper.activated == 1) // if it is goto
+  if (Gripper.action_status == 1 && Gripper.calibrated == 1 && Gripper.activated == 1 && controller.I_AM_GRIPPER == 1) // if it is goto
   {
     // If our gripper is at the requested positon hold that position
     if (Gripper.position_setpoint == Gripper.position || Gripper.At_position == 1)

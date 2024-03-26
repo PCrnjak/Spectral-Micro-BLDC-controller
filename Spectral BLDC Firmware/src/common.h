@@ -88,8 +88,6 @@ typedef struct
     volatile float flux_linkage = 0;     // Flux linkage of your BLDC motor
     volatile float KV = 0;
 
-    volatile int Termistor_on_off = 0; // 0 is off 1 is on
-
     volatile int Max_temperature = 75; // Max temperature in degrees
     volatile int Min_temperature = -20; // Min temperature in degrees
 

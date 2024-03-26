@@ -481,7 +481,7 @@ void UART_protocol(Stream &Serialport)
             else if (strcmp(command, "Temp") == 0)
             {
                 Serialport.print("Temp ");
-                if (controller.Termistor_on_off == 1)
+                if (controller.Thermistor_on_off == 1)
                 {
                     Serialport.println(controller.TEMP_DEG);
                 }
@@ -499,15 +499,15 @@ void UART_protocol(Stream &Serialport)
                     int var = atoi(argument);
                     if (var >= 1)
                     {
-                        controller.Termistor_on_off = 1;
+                        controller.Thermistor_on_off = 1;
                     }
                     else
                     {
-                        controller.Termistor_on_off = 0;
+                        controller.Thermistor_on_off = 0;
                     }
                 }
                 Serialport.print("Term ");
-                Serialport.println(controller.Termistor_on_off);
+                Serialport.println(controller.Thermistor_on_off);
             }
 
             // Print controller mode
