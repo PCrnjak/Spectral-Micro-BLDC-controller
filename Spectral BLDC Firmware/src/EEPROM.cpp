@@ -230,10 +230,10 @@ void Set_Default_config(){
 
   writeInt(SERIAL_NUMBER_EEPROM,1);
   writeInt(HARDWARE_VERSION_EEPROM, 1);
-  writeInt(BATCH_DATA_EEPROM, 1);
+  writeInt(BATCH_DATA_EEPROM, 2732024);
 
   writeInt(CAN_ID_EEPROM, 0);
-  writeInt(SOFTWARE_VERSION_EEPROM, 1);
+  writeInt(SOFTWARE_VERSION_EEPROM, 100);
   writeInt(LED_ON_OFF_EEPROM, 1);
   writeInt(THERMISTOR_ON_OFF_EEPROM, 0);
   writeInt(POLE_PAIR, 7);
