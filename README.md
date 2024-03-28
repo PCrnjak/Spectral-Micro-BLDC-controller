@@ -15,7 +15,7 @@ You can buy the Spectral Micro BLDC controller here: <br />
  https://source-robotics.com/products/spectral-micro-bldc-controller
 
 # Firmware 
-Spectral firmware is located here. To install it follow this guide!
+Spectral firmware is located [here](https://github.com/PCrnjak/Spectral-Micro-BLDC-controller/tree/main/Spectral%20BLDC%20Firmware). To install it follow [this guide!](https://source-robotics.github.io/Spectral-BLDC-docs/apage3_flashing_firmware/)
 
 
 # Documentation:
