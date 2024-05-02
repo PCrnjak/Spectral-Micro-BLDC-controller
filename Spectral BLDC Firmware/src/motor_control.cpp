@@ -152,6 +152,57 @@ void Collect_data()
   /****  End measurment here *********/
 }
 
+void Get_first_encoder(){
+  uint16_t result;
+  uint16_t result1;
+  uint16_t result2;
+
+  /*Get position, current1, current2, vbus*/
+  /*position sensor packs its data in 2 8 bit data packets */
+  /*First we send 0x8300 as a response we get one packet*/
+  /*Then we send 0c8400 as a response we get second packet*/
+  /*Between requesting packets we need small delay and we use ADC readings as a delay*/
+  /*Reading sense1,2 and vbus takes around 10us */
+  /*After we get both packets they are unpacked and we get position value as 14 bit, no mag bit and parity check bit */
+  SPI.beginTransaction(MT6816_settings);
+  digitalWriteFast(CSN, LOW);
+  result1 = SPI.transfer16(0x8300);
+  digitalWriteFast(CSN, HIGH);
+
+  delayMicroseconds(100);
+  result1 = result1 << 8;
+  digitalWriteFast(CSN, LOW);
+  result2 = SPI.transfer16(0x8400);
+  digitalWriteFast(CSN, HIGH);
+  result = result1 | result2;
+  controller.Position_Raw = result >> 2;
+  SPI.endTransaction();
+  /***********************************/
+
+  /* Check for magnet on MT6816*/
+  if ((result & MT6816_NO_MAGNET_BIT) == MT6816_NO_MAGNET_BIT)
+  { // no magnet or not detecting enough flux density
+    controller.Magnet_warrning = true;
+    controller.encoder_error = 1;
+  }
+  else
+  { // Detected magnet
+    controller.Magnet_warrning = false;
+  }
+  /***********************************/
+
+
+
+  /* Motor position with multiple rotations in encoder ticks*/
+  controller.Position_Ticks = controller.Position_Raw;
+  /***********************************/
+
+  /*  Save position values for next cycle*/
+  controller.Old_Position_Ticks = controller.Position_Ticks;
+  controller.Old_Position_Raw = controller.Position_Raw;
+  /***********************************/
+}
+
 /// @brief Interrupt callback routine for FOC mode
 void IT_callback(void)
 {

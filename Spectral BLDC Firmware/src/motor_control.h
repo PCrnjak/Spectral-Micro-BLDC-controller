@@ -61,4 +61,6 @@ void Phase_order();
 void Collect_data2();
 void Gripper_mode();
 void Calibrate_gripper();
+void Get_first_encoder();
+
 #endif

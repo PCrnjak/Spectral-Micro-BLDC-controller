@@ -78,8 +78,12 @@ void setup()
   MyTim2 = pwm_high(PWM_CH3, PWM_FREQ * 2);
   pwm_align(MyTim2);
 
+  // Get initial encoder value!
+  Get_first_encoder();
+
   // Collect data before entering the ISR
   // This fixes velocity error
+  
   for (int i = 0; i < 20; i++)
   {
     Collect_data();
