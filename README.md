@@ -21,7 +21,8 @@ Spectral firmware is located [here](https://github.com/PCrnjak/Spectral-Micro-BL
 # Documentation:
 
 - [Official website](https://source-robotics.com/products/spectral-micro-bldc-controller)
-- [DOCS](https://source-robotics.github.io/Spectral-BLDC-docs/)
+- [DOCS](https://source-robotics.github.io/Spectral-BLDC-docs/) Offers great starting guides with project examples + code 
+
 
 # API and control
 - [GUI software](https://github.com/PCrnjak/Spectral-motor-GUI)
