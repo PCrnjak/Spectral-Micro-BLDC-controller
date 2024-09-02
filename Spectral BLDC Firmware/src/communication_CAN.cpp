@@ -294,7 +294,7 @@ void CAN_protocol(Stream &Serialport)
                 
                 Data_pack_1_CAN();
                 break;
-
+ 
             }
 
             case IN_GRIPPER_DATA_PACK:{

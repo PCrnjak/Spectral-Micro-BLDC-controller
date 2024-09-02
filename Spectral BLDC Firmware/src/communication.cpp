@@ -443,6 +443,20 @@ void UART_protocol(Stream &Serialport)
                 Serialport.println(PID.Iq_current_limit);
             }
 
+
+            // Set new max temperature limit
+            else if (strcmp(command, "Tlim") == 0)
+            {
+                if (strlen(argument) != 0)
+                {
+                    int var = atoi(argument);
+                    controller.Max_temperature = var;
+                }
+                Serialport.print("Temp limit ");
+                Serialport.println(controller.Max_temperature);
+            }
+
+
             // Set/Get Dir
             else if (strcmp(command, "Dir") == 0)
             {

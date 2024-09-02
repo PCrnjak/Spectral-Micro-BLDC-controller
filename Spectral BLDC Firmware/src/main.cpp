@@ -117,9 +117,9 @@ void loop()
 
     //Serial.print("RPM");
     //Serial.println((controller.Velocity_Filter * 60) / 16384);
-    int rpm_speed = (controller.Velocity_Filter * 60) / 16384;
-    float load_correction = PID.Iq_setpoint / (PID.Iq_setpoint - FOC.Iq);
-    float KV_value = (rpm_speed / (controller.VBUS_mV / 1000)) * load_correction;
+    //int rpm_speed = (controller.Velocity_Filter * 60) / 16384;
+    //float load_correction = PID.Iq_setpoint / (PID.Iq_setpoint - FOC.Iq);
+    //float KV_value = (rpm_speed / (controller.VBUS_mV / 1000)) * load_correction;
     //Serial.print("Kv is: ");
     //Serial.println(controller.temp1);
     //Serial.print("Kv loop is: ");

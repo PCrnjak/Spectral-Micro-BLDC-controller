@@ -166,6 +166,8 @@ void read_config()
   controller.I_AM_GRIPPER = readInt(I_AM_GRIPPER_EEPROM);
   PID.Reset_integral_accumulator = readInt(RESET_INTEGRAL_EEPROM);
 
+  controller.Max_temperature =   readInt(TEMPERATURE_ERROR);
+
 }
 
 /// @brief Clean the config that is saved in the EEPROM
@@ -223,6 +225,8 @@ void Write_config()
   writeInt(I_AM_GRIPPER_EEPROM,controller.I_AM_GRIPPER);
   writeInt(RESET_INTEGRAL_EEPROM,PID.Reset_integral_accumulator);
 
+  writeInt(TEMPERATURE_ERROR,controller.Max_temperature);
+
 }
 
 /// @brief  Reset to default config.  First write to EEPROM then read it back.
@@ -270,6 +274,8 @@ void Set_Default_config(){
 
   writeInt(I_AM_GRIPPER_EEPROM,0);
   writeInt(RESET_INTEGRAL_EEPROM,0);
+
+  writeInt(TEMPERATURE_ERROR,75);
 
   read_config();
 
