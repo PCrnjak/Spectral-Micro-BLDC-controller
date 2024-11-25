@@ -25,13 +25,14 @@ Spectral firmware is located [here](https://github.com/PCrnjak/Spectral-Micro-BL
 
 
 # API and control
-- [GUI software](https://github.com/PCrnjak/Spectral-motor-GUI)
-- High level concepts and examples: [Gravity compensation]()
-- [Python API / Basic examples](https://github.com/PCrnjak/Spectral-BLDC-Python/tree/main), [Source Robotics toolbox](https://github.com/PCrnjak/Source-Robotics-Toolbox/tree/main)
-- **Early stage**: [Arduino](https://github.com/PCrnjak/SpectralMicroArduino), [SimpleFOC](https://github.com/PCrnjak/Spectral-Micro-Simple-FOC-), [ROS2](https://github.com/PCrnjak/SpectralMicroROS2)
+- [GUI software ](https://github.com/PCrnjak/Spectral-motor-GUI)
+- [Python API & Examples](https://github.com/PCrnjak/Spectral-BLDC-Python/tree/main)
+- [Source Robotics toolbox](https://github.com/PCrnjak/Source-Robotics-Toolbox/tree/main) 
+- [SimpleFOC & Examples](https://github.com/PCrnjak/Spectral-Micro-Simple-FOC-)
+- **Early stage**: [Arduino](https://github.com/PCrnjak/SpectralMicroArduino), [ROS2](https://github.com/PCrnjak/SpectralMicroROS2)
 
 # More about Spectral BLDC motor controllers
-- Example projects - coming soon
+
 - [Source robotics website](https://www.youtube.com/channel/UCp3sDRwVkbm7b2M-2qwf5aQ)
 - [Youtube](https://www.youtube.com/channel/UCp3sDRwVkbm7b2M-2qwf5aQ)
 - [Hackaday](https://hackaday.io/project/191860-parol6-desktop-robotic-arm)
