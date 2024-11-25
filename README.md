@@ -26,7 +26,8 @@ Spectral firmware is located [here](https://github.com/PCrnjak/Spectral-Micro-BL
 
 # API and control
 - [GUI software](https://github.com/PCrnjak/Spectral-motor-GUI)
-- [Python API](https://github.com/PCrnjak/Spectral-BLDC-Python/tree/main), [Source Robotics toolbox](https://github.com/PCrnjak/Source-Robotics-Toolbox/tree/main)
+- High level concepts and examples: [Gravity compensation]()
+- [Python API / Basic examples](https://github.com/PCrnjak/Spectral-BLDC-Python/tree/main), [Source Robotics toolbox](https://github.com/PCrnjak/Source-Robotics-Toolbox/tree/main)
 - **Early stage**: [Arduino](https://github.com/PCrnjak/SpectralMicroArduino), [SimpleFOC](https://github.com/PCrnjak/Spectral-Micro-Simple-FOC-), [ROS2](https://github.com/PCrnjak/SpectralMicroROS2)
 
 # More about Spectral BLDC motor controllers
