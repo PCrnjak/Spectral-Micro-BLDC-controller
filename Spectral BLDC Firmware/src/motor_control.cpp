@@ -282,7 +282,7 @@ void IT_callback(void)
   }
 
   /// Speed error
-  if (controller.Velocity_Filter > PID.Velocity_limit_error)
+  if (abs(controller.Velocity_Filter) > PID.Velocity_limit_error)
   {
     controller.Velocity_error = 1;
     controller.Error = 1;
@@ -352,6 +352,9 @@ void IT_callback(void)
       break;
     case 7:
       Calibrate_gripper();
+      break;
+    case 8:
+      Voltage_Torque_mode();
       break;
     default:
       /// Idle
@@ -941,6 +944,7 @@ Calculate Correct phase order
   {
 
     if(KV_ticks <= KV_duration){
+      PID.Iq_current_limit = 1600;
       PID.Iq_setpoint = 1250;
       Collect_data();
       Torque_mode();
@@ -1430,15 +1434,24 @@ void Position_mode()
   PID.Id_errSum = PID.Id_errSum + Id_error * PID.Ki_id;
   PID.Iq_errSum = PID.Iq_errSum + Iq_error * PID.Ki_iq;
 
+  int voltage_limit_var = controller.VBUS_mV;
+  if (PID.Voltage_limit == 0){
+    voltage_limit_var = controller.VBUS_mV;
+  }else if (PID.Voltage_limit > 0 && PID.Voltage_limit < controller.VBUS_mV){
+    voltage_limit_var = PID.Voltage_limit;
+  }else {
+    voltage_limit_var = controller.VBUS_mV;
+  }
+
   /* Handle integral windup*/
-  limit_norm(&PID.Id_errSum, &PID.Iq_errSum, controller.VBUS_mV);
+  limit_norm(&PID.Id_errSum, &PID.Iq_errSum,voltage_limit_var);
 
   float Ud_setpoint = PID.Kp_id * Id_error + PID.Id_errSum;
   float Uq_setpoint = PID.Kp_iq * Iq_error + PID.Iq_errSum;
 
   /* Clamp outputs*/
   /***********************************/
-  limit_norm(&Ud_setpoint, &Uq_setpoint, controller.VBUS_mV * OVERMODULATION);
+  limit_norm(&Ud_setpoint, &Uq_setpoint, voltage_limit_var * OVERMODULATION);
   abc_fast(Ud_setpoint, Uq_setpoint, &FOC.U1, &FOC.U2, &FOC.U3);
   // sinusoidal_commutation(controller.VBUS_mV, FOC.U1, FOC.U2, FOC.U3, &FOC.U1_normalized, &FOC.U2_normalized, &FOC.U3_normalized);
   space_vector_commutation(controller.VBUS_mV, FOC.U1, FOC.U2, FOC.U3, &FOC.U1_normalized, &FOC.U2_normalized, &FOC.U3_normalized);
@@ -1490,15 +1503,24 @@ void Velocity_mode()
   PID.Id_errSum = PID.Id_errSum + Id_error * PID.Ki_id;
   PID.Iq_errSum = PID.Iq_errSum + Iq_error * PID.Ki_iq;
 
+  int voltage_limit_var = controller.VBUS_mV;
+  if (PID.Voltage_limit == 0){
+    voltage_limit_var = controller.VBUS_mV;
+  }else if (PID.Voltage_limit > 0 && PID.Voltage_limit < controller.VBUS_mV){
+    voltage_limit_var = PID.Voltage_limit;
+  }else {
+    voltage_limit_var = controller.VBUS_mV;
+  }
+
   /* Handle integral windup*/
-  limit_norm(&PID.Id_errSum, &PID.Iq_errSum, controller.VBUS_mV);
+  limit_norm(&PID.Id_errSum, &PID.Iq_errSum, voltage_limit_var);
 
   float Ud_setpoint = PID.Kp_id * Id_error + PID.Id_errSum;
   float Uq_setpoint = PID.Kp_iq * Iq_error + PID.Iq_errSum;
 
   /* Clamp outputs*/
   /***********************************/
-  limit_norm(&Ud_setpoint, &Uq_setpoint, controller.VBUS_mV * OVERMODULATION);
+  limit_norm(&Ud_setpoint, &Uq_setpoint, voltage_limit_var * OVERMODULATION);
   abc_fast(Ud_setpoint, Uq_setpoint, &FOC.U1, &FOC.U2, &FOC.U3);
   // sinusoidal_commutation(controller.VBUS_mV, FOC.U1, FOC.U2, FOC.U3, &FOC.U1_normalized, &FOC.U2_normalized, &FOC.U3_normalized);
   space_vector_commutation(controller.VBUS_mV, FOC.U1, FOC.U2, FOC.U3, &FOC.U1_normalized, &FOC.U2_normalized, &FOC.U3_normalized);
@@ -1530,11 +1552,46 @@ void Torque_mode()
   PID.Id_errSum = PID.Id_errSum + Id_error * PID.Ki_id;
   PID.Iq_errSum = PID.Iq_errSum + Iq_error * PID.Ki_iq;
 
+
+  int voltage_limit_var = controller.VBUS_mV;
+  if (PID.Voltage_limit == 0){
+    voltage_limit_var = controller.VBUS_mV;
+  }else if (PID.Voltage_limit > 0 && PID.Voltage_limit < controller.VBUS_mV){
+    voltage_limit_var = PID.Voltage_limit;
+  }else {
+    voltage_limit_var = controller.VBUS_mV;
+  }
+
   /* Handle integral windup*/
-  limit_norm(&PID.Id_errSum, &PID.Iq_errSum, controller.VBUS_mV);
+  limit_norm(&PID.Id_errSum, &PID.Iq_errSum, voltage_limit_var);
 
   float Ud_setpoint = (PID.Kp_id * Id_error + PID.Id_errSum);
   float Uq_setpoint = (PID.Kp_iq * Iq_error + PID.Iq_errSum);
+
+  /* Clamp outputs*/
+  /***********************************/
+  limit_norm(&Ud_setpoint, &Uq_setpoint, (voltage_limit_var * OVERMODULATION));
+  abc_fast(Ud_setpoint, Uq_setpoint, &FOC.U1, &FOC.U2, &FOC.U3);
+  // sinusoidal_commutation(controller.VBUS_mV, FOC.U1, FOC.U2, FOC.U3, &FOC.U1_normalized, &FOC.U2_normalized, &FOC.U3_normalized);
+  space_vector_commutation(controller.VBUS_mV, FOC.U1, FOC.U2, FOC.U3, &FOC.U1_normalized, &FOC.U2_normalized, &FOC.U3_normalized);
+
+  FOC.PWM1 = FOC.U1_normalized * PWM_MAX;
+  FOC.PWM2 = FOC.U2_normalized * PWM_MAX;
+  FOC.PWM3 = FOC.U3_normalized * PWM_MAX;
+  //
+
+  Phase_order();
+}
+
+
+
+/// @todo feedforwards
+/// @brief  FOC cascade torque/current mode
+void Voltage_Torque_mode()
+{
+
+  float Ud_setpoint = PID.Ud_setpoint;
+  float Uq_setpoint = PID.Uq_setpoint;
 
   /* Clamp outputs*/
   /***********************************/
@@ -1550,6 +1607,9 @@ void Torque_mode()
 
   Phase_order();
 }
+
+
+
 
 /// @todo feedforwards
 /// @brief Impedance PD controller
@@ -1576,15 +1636,25 @@ void PD_mode()
   PID.Id_errSum = PID.Id_errSum + Id_error * PID.Ki_id;
   PID.Iq_errSum = PID.Iq_errSum + Iq_error * PID.Ki_iq;
 
+
+  int voltage_limit_var = controller.VBUS_mV;
+  if (PID.Voltage_limit == 0){
+    voltage_limit_var = controller.VBUS_mV;
+  }else if (PID.Voltage_limit > 0 && PID.Voltage_limit < controller.VBUS_mV){
+    voltage_limit_var = PID.Voltage_limit;
+  }else {
+    voltage_limit_var = controller.VBUS_mV;
+  }
+
   /* Handle integral windup*/
-  limit_norm(&PID.Id_errSum, &PID.Iq_errSum, controller.VBUS_mV);
+  limit_norm(&PID.Id_errSum, &PID.Iq_errSum, voltage_limit_var);
 
   float Ud_setpoint = (PID.Kp_id * Id_error + PID.Id_errSum);
   float Uq_setpoint = (PID.Kp_iq * Iq_error + PID.Iq_errSum);
 
   /* Clamp outputs*/
   /***********************************/
-  limit_norm(&Ud_setpoint, &Uq_setpoint, (controller.VBUS_mV * OVERMODULATION));
+  limit_norm(&Ud_setpoint, &Uq_setpoint, (voltage_limit_var* OVERMODULATION));
   abc_fast(Ud_setpoint, Uq_setpoint, &FOC.U1, &FOC.U2, &FOC.U3);
   // sinusoidal_commutation(controller.VBUS_mV, FOC.U1, FOC.U2, FOC.U3, &FOC.U1_normalized, &FOC.U2_normalized, &FOC.U3_normalized);
   space_vector_commutation(controller.VBUS_mV, FOC.U1, FOC.U2, FOC.U3, &FOC.U1_normalized, &FOC.U2_normalized, &FOC.U3_normalized);

@@ -62,7 +62,7 @@ typedef struct
     volatile int Velocity;                          //  velocity of the motor
     volatile float Torque_estimate;                 // Kt * Iq
     volatile int pole_pairs = 11;                   // Number of pole pairs of your BLDC motor
-    volatile float current_control_bandwidth = 200; // default 200 HZ; Will set PI gains for Q and D current loops based on phase resistance
+    volatile float current_control_bandwidth = 500; // default 200 HZ; Will set PI gains for Q and D current loops based on phase resistance
                                                     // phase inductance and loop time
                                                     // RAD/s = HZ * 2pi
 
@@ -78,7 +78,7 @@ typedef struct
 
     volatile int Thermistor_on_off = 0; // Are we taking termistor mesurements? 0 is off, 1 is on
 
-    volatile int Controller_mode = 0; // 0 -> idle, 1 -> Positon, 2 -> Speed, 3 -> Current, 4 -> PD, 5 -> Open-loop speed, 6 -> Gripper mode
+    volatile int Controller_mode = 0; // 0 -> idle, 1 -> Positon, 2 -> Speed, 3 -> Current, 4 -> PD, 5 -> Open-loop speed, 6 -> Gripper mode, 7-> Calibrate gripper, 8 -> Voltage Torque mode
     // 7 -> Gripper calib mode
 
     volatile float Resistance = 0;       // Resistance of SINGLE PHASE of your BLDC motor
@@ -211,6 +211,14 @@ extern _FOC FOC;
 typedef struct
 {
 
+
+    volatile int Voltage_limit = 0; // Voltage limit for Ud and Uq voltages. If 0 value of controller.VBUS_mV will be used
+    // if != 0 it will use that number (if bigger than controller.VBUS_mV it will use controller.VBUS_mV)
+    // This is extremely important for proper operation of BLDC motor loops since their resistances can be less
+    // than 1 ohm and using full range of 24V makes the loop unstable. 
+    // Usually it setting this to 0 is good (so using full controller.VBUS_mV range)
+    // Use smaller numbers if you have really small phase resistances like 1 ohm or less
+
     // Do we want to reset integral accumulators after receiving new setopint, needs to be 1 for the gripper
     volatile int Reset_integral_accumulator = 0;
 
@@ -251,6 +259,9 @@ typedef struct
     // https://en.wikipedia.org/wiki/Impedance_control
     volatile float KD = 0.002800; //  [Nm*s/rad]  KD 0.002800
     volatile float KP = 0.14000;  //  [Nm/rad] KP 0.14000
+
+    volatile int Uq_setpoint = 0;
+    volatile int Ud_setpoint = 0;
 
 
 } PID_par;

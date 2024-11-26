@@ -73,7 +73,18 @@ bool SerialPacketParser::parse(char c, char *command, char *argument)
         {
           return true;
         }
-
+        else if (strcmp(command, "Uq") == 0)
+        {
+          return true;
+        }
+        else if (strcmp(command, "Vlim") == 0)
+        {
+          return true;
+        }
+        else if (strcmp(command, "Ud") == 0)
+        {
+          return true;
+        }
         else if (strcmp(command, "P") == 0)
         {
           return true;
@@ -388,7 +399,19 @@ bool SerialPacketParser::parse(char c, char *command, char *argument)
         {
           return true;
         }
+        else if (strcmp(command, "Uq") == 0)
+        {
+          return true;
+        }
+        else if (strcmp(command, "Ud") == 0)
+        {
+          return true;
+        }
         else if (strcmp(command, "P") == 0)
+        {
+          return true;
+        }
+        else if (strcmp(command, "Vlim") == 0)
         {
           return true;
         }

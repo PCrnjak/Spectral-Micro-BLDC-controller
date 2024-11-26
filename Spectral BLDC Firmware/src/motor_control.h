@@ -62,5 +62,6 @@ void Collect_data2();
 void Gripper_mode();
 void Calibrate_gripper();
 void Get_first_encoder();
+void Voltage_Torque_mode();
 
 #endif

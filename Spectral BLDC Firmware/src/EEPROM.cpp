@@ -167,7 +167,8 @@ void read_config()
   PID.Reset_integral_accumulator = readInt(RESET_INTEGRAL_EEPROM);
 
   controller.Max_temperature =   readInt(TEMPERATURE_ERROR);
-
+  controller.Max_Vbus = readInt(VOLTAGE_ERROR);
+  PID.Voltage_limit = readInt(VOLTAGE_LIMIT);
 }
 
 /// @brief Clean the config that is saved in the EEPROM
@@ -226,6 +227,8 @@ void Write_config()
   writeInt(RESET_INTEGRAL_EEPROM,PID.Reset_integral_accumulator);
 
   writeInt(TEMPERATURE_ERROR,controller.Max_temperature);
+  writeInt(VOLTAGE_ERROR,controller.Max_Vbus);
+  writeInt(VOLTAGE_LIMIT,PID.Voltage_limit);
 
 }
 
@@ -276,6 +279,8 @@ void Set_Default_config(){
   writeInt(RESET_INTEGRAL_EEPROM,0);
 
   writeInt(TEMPERATURE_ERROR,75);
+  writeInt(VOLTAGE_ERROR,29000);
+  writeInt(VOLTAGE_LIMIT,0);
 
   read_config();
 

@@ -83,6 +83,86 @@ void UART_protocol(Stream &Serialport)
                 Serialport.println(FOC.Id);
             }
 
+            // Get/Set voltage limit
+            else if (strcmp(command, "Vlim") == 0)
+            {
+
+                if (strlen(argument) != 0)
+                {
+                    PID.Voltage_limit = atoi(argument);
+                }
+
+                Serialport.print("Vlim ");      
+                if (PID.Voltage_limit == 0){
+                    Serialport.println(controller.VBUS_mV);
+                }else{
+                  Serialport.println(PID.Voltage_limit); 
+                }
+
+            }
+
+
+            else if (strcmp(command, "Uq") == 0)
+            {
+
+                if (strlen(argument) != 0)
+                {
+
+                    if (PID.Reset_integral_accumulator == 1)
+                    {
+                        PID.V_errSum = 0;
+                        PID.Iq_errSum = 0;
+                        PID.Id_errSum = 0;
+                    }
+
+                    PID.Feedforward_current = 0;
+                    PID.Uq_setpoint = atoi(argument);
+                    controller.Controller_mode = 8;
+                        if(controller.reset_pin_state == 0 && controller.sleep_pin_state == 0){
+                            digitalWriteFast(SLEEP, HIGH);
+                            digitalWriteFast(RESET, HIGH);
+                            controller.reset_pin_state = 1;
+                            controller.sleep_pin_state = 1;
+                        }
+                }
+
+                Serialport.print("Uq ");
+                Serialport.println(PID.Uq_setpoint);
+            }
+
+
+            // Set Ud voltage setpoint
+            // Does not place motor in the voltage torque mode
+            else if (strcmp(command, "Ud") == 0)
+            {
+
+                if (strlen(argument) != 0)
+                {
+
+                    if (PID.Reset_integral_accumulator == 1)
+                    {
+                        PID.V_errSum = 0;
+                        PID.Iq_errSum = 0;
+                        PID.Id_errSum = 0;
+                    }
+
+                    PID.Feedforward_current = 0;
+                    PID.Ud_setpoint = atoi(argument);
+                    //controller.Controller_mode = 6;
+                        if(controller.reset_pin_state == 0 && controller.sleep_pin_state == 0){
+                            digitalWriteFast(SLEEP, HIGH);
+                            digitalWriteFast(RESET, HIGH);
+                            controller.reset_pin_state = 1;
+                            controller.sleep_pin_state = 1;
+                        }
+                }
+
+                Serialport.print("Ud ");
+                Serialport.println(PID.Ud_setpoint);
+            }
+
+
+
             // Set Velocity setpoint
             // Switches actuator to velocity mode
             else if (strcmp(command, "V") == 0)
@@ -360,6 +440,19 @@ void UART_protocol(Stream &Serialport)
                 }
                 Serialport.print("KV ");
                 Serialport.println(controller.KV, 5);
+            }
+
+
+            // Set/Get Max motor voltage
+            else if (strcmp(command, "Vmax") == 0)
+            {
+
+                if (strlen(argument) != 0)
+                {   
+                    controller.Max_Vbus = atoi(argument);
+                }
+                Serialport.print("Vmax in mV: ");
+                Serialport.println(controller.Max_Vbus);
             }
 
             // Set/Get Flux linkage
@@ -963,6 +1056,13 @@ void UART_protocol(Stream &Serialport)
 
                 Serialport.print("Velocity loop Ki: ");
                 Serialport.println(PID.Ki_v, 5);
+
+                Serialport.print("Voltage limit: ");
+                if (PID.Voltage_limit == 0){
+                    Serialport.println(controller.VBUS_mV);
+                }else{
+                  Serialport.println(PID.Voltage_limit); 
+                }
 
                 Serialport.print("Velocity limit: ");
                 Serialport.print(PID.Velocity_limit);
