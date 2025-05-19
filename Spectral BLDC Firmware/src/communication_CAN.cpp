@@ -392,7 +392,7 @@ void CAN_protocol(Stream &Serialport)
             }
 
             case IN_WATCHDOG_TIMEOUT:{
-                if(CAN_RX_msg.len == 4){
+                if(CAN_RX_msg.len == 5){
                     uint8_t temp_buffer[] =  {CAN_RX_msg.data[0], CAN_RX_msg.data[1], CAN_RX_msg.data[2], CAN_RX_msg.data[3]};
                     controller.watchdog_time_ms = fourBytesToInt(temp_buffer);
                     controller.watchdog_action = CAN_RX_msg.data[4];
