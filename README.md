@@ -28,7 +28,7 @@ Spectral firmware is located [here](https://github.com/PCrnjak/Spectral-Micro-BL
 - [GUI software ](https://github.com/PCrnjak/Spectral-motor-GUI)
 - [Python API & Examples](https://github.com/PCrnjak/Spectral-BLDC-Python/tree/main)
 - [Source Robotics toolbox](https://github.com/PCrnjak/Source-Robotics-Toolbox/tree/main) 
-- [SimpleFOC & Examples](https://github.com/PCrnjak/Spectral-Micro-Simple-FOC-)
+- [SimpleFOC port](https://github.com/PCrnjak/Spectral-Micro-Simple-FOC-)
 - **Early stage**: [Arduino](https://github.com/PCrnjak/SpectralMicroArduino), [ROS2](https://github.com/PCrnjak/SpectralMicroROS2)
 
 # More about Spectral BLDC motor controllers
