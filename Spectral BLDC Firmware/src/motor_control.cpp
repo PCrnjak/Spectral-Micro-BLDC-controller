@@ -2091,8 +2091,7 @@ void Collect_data2()
   /****  End measurment here *********/
 }
 
-#define POSITION_TOLERANCE 50
-#define POSITION_HYSTERESIS (POSITION_TOLERANCE * 2)
+#define POSITION_TOLERANCE 5
 #define VELOCITY_CONTACT_THRESHOLD 500.0f
 #define CURRENT_CONTACT_RATIO 0.8f
 
@@ -2102,50 +2101,37 @@ void Gripper_mode()
   // --- Reset position flag if a new command was received ---
   if (Gripper.Same_command == 0)
   {
-    Gripper.At_position = 0;
+    Gripper.At_position = 0; // Only reset here when new command arrives
   }
 
-  // --- Transform setpoints into motor-readable params ---
   PID.Iq_current_limit = Gripper.current_setpoint;
   PID.Position_setpoint = map(Gripper.position_setpoint, 0, 255, Gripper.max_open_position, Gripper.max_closed_position);
   int vel_setpoint = map(Gripper.speed_setpoint, 0, 255, Gripper.min_speed, Gripper.max_speed);
 
-  // --- Handle speed direction ---
   if (PID.Position_setpoint > controller.Position_Ticks)
-  {
     PID.Velocity_setpoint = vel_setpoint;
-  }
   else if (PID.Position_setpoint < controller.Position_Ticks)
-  {
     PID.Velocity_setpoint = -vel_setpoint;
-  }
 
-  // --- Main control condition: valid GOTO command ---
-  if (Gripper.action_status == 1 && Gripper.calibrated == 1 && Gripper.activated == 1 && controller.I_AM_GRIPPER == 1)
+  if (Gripper.action_status == 1 && Gripper.calibrated && Gripper.activated && controller.I_AM_GRIPPER)
   {
     int pos_error = abs(PID.Position_setpoint - controller.Position_Ticks);
 
-    // ✅ If we're within tolerance → mark as at position
+    // ✅ If within tolerance, mark as at position (and never unset again)
     if (pos_error < POSITION_TOLERANCE)
     {
       Gripper.At_position = 1;
     }
-    // ✅ Only reset if error grows significantly (hysteresis)
-    else if (pos_error > POSITION_HYSTERESIS)
-    {
-      Gripper.At_position = 0;
-    }
 
-    // --- Control logic ---
     if (Gripper.At_position)
     {
-      // ✅ Once in position → stay in position mode
+      // ✅ Once reached, stay in position mode — never go back to velocity
       Position_mode();
       Gripper.object_detection_status = 3; // at position
     }
     else
     {
-      // ✅ Approach target using velocity control
+      // ✅ Only used while still approaching the target
       Velocity_mode();
 
       float current_abs = fabs(FOC.Iq);
@@ -2153,26 +2139,21 @@ void Gripper_mode()
 
       if (velocity_abs > VELOCITY_CONTACT_THRESHOLD)
       {
-        // Still moving → no object
-        Gripper.object_detection_status = 0;
+        Gripper.object_detection_status = 0; // still moving freely
+      }
+      else if (current_abs > CURRENT_CONTACT_RATIO * PID.Iq_current_limit)
+      {
+        Gripper.object_detection_status = (FOC.Iq > 0) ? 2 : 1;
       }
       else
       {
-        // Slowed down → check current for contact
-        if (current_abs > CURRENT_CONTACT_RATIO * PID.Iq_current_limit)
-        {
-          Gripper.object_detection_status = (FOC.Iq > 0) ? 2 : 1;
-        }
-        else
-        {
-          Gripper.object_detection_status = 0;
-        }
+        Gripper.object_detection_status = 0;
       }
     }
   }
   else
   {
-    // --- Idle or disabled state ---
+    // --- Idle or disabled ---
     PID.Velocity_setpoint = 0;
     Velocity_mode();
 
@@ -2188,18 +2169,16 @@ void Gripper_mode()
     float current_abs = fabs(FOC.Iq);
     float velocity_abs = fabs(controller.Velocity_Filter);
 
-    // ✅ Detect contact even when idle (optional)
     if (velocity_abs < VELOCITY_CONTACT_THRESHOLD && current_abs > CURRENT_CONTACT_RATIO * PID.Iq_current_limit)
     {
       Gripper.object_detection_status = (FOC.Iq > 0) ? 2 : 1;
     }
     else
     {
-      Gripper.object_detection_status = 0; // free motion
+      Gripper.object_detection_status = 0;
     }
   }
 
-  // ✅ Remember we processed this command
   Gripper.Same_command = 1;
 }
 
