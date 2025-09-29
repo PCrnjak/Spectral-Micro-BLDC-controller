@@ -20,7 +20,6 @@
 /* USER CODE END Header */
 /* Includes ------------------------------------------------------------------*/
 
-
 #ifndef COMMON_H
 #define COMMON_H
 
@@ -57,6 +56,8 @@ typedef struct
     volatile int Old_Position_Ticks;                // position with multiple rotations from previous cycle
     volatile float Position_RAD;                    // Raw position but in radians
     volatile float Electric_Angle;                  // Electrical angle - depends on number of pole pairs
+    volatile float theta_offset = 0.0f; // will be determined at calibration
+
     volatile int ROTATIONS;                         // Number of full rotations that motor did
     volatile int Velocity_Filter;                   // Filtered velocity of the motor
     volatile int Velocity;                          //  velocity of the motor
@@ -88,7 +89,7 @@ typedef struct
     volatile float flux_linkage = 0;     // Flux linkage of your BLDC motor
     volatile float KV = 0;
 
-    volatile int Max_temperature = 75; // Max temperature in degrees
+    volatile int Max_temperature = 75;  // Max temperature in degrees
     volatile int Min_temperature = -20; // Min temperature in degrees
 
     volatile int Max_Vbus = 29500; // Max vbus voltage in mV
@@ -98,9 +99,9 @@ typedef struct
 
     volatile int watchdog_time_ms = 0;
     volatile bool watchdog_reset = 1;
-    volatile int watchdog_action = 0; // Hold position, Idle, brake
+    volatile int watchdog_action = 0;   // Hold position, Idle, brake
     volatile int Heartbeat_rate_ms = 0; // Motor controller will send data every Heartbeat_rate_ms
-    volatile bool Send_heartbeat = 0; 
+    volatile bool Send_heartbeat = 0;
 
     volatile bool Activated = 0;         // If controller is activated or not
     volatile bool Error = 0;             // General error
@@ -123,7 +124,7 @@ typedef struct
     volatile int Open_loop_voltage = 5000;           // Voltage to use when spinning the motor open loop. In mV
     volatile float Open_loop_speed = 20.0;           // Speed to be used when spinning the motor open loop. In RAD/s
     volatile int Number_of_rotations = 8;            // Number of open loop electrical rotations during calibration
-    volatile int Phase_voltage = 5000;                 // Max voltage to be used during Kv calculation
+    volatile int Phase_voltage = 5000;               // Max voltage to be used during Kv calculation
 
     // Calibration steps
     // 0 is neutral, 1 is error, 2 is success
@@ -155,6 +156,27 @@ typedef struct
     volatile float temp2 = 0;
 
     volatile bool handle_can = 0;
+
+    volatile bool hall_trigger = 1; // used to record if hall sensor was triggered or not, normal state of hall is high (1)
+    volatile bool trigger_value = 0;
+
+    // temp / testing ?
+    volatile int calibration_offset_current = 300;
+    volatile int temp_var_offset_calib = 0;
+    volatile int align_state = 0;
+    volatile int align_counter = 0;
+    volatile float aligned_angle = 0;
+    volatile bool align_done = false;
+    volatile bool calib_done = false;
+    volatile bool calib_reset = false;
+    volatile int Velocity_fwd = 0;
+    volatile int Velocity_bwd = 0;
+
+    // Open loop movements
+    volatile int microstep = 16;
+    volatile int gosteps = 0;
+    volatile int step_interval = 1000;    // step interval in microseconds
+    volatile int open_loop_move_done = 0; // 1 = finished, cleared by user
 
 } Measure;
 
@@ -211,11 +233,10 @@ extern _FOC FOC;
 typedef struct
 {
 
-
     volatile int Voltage_limit = 0; // Voltage limit for Ud and Uq voltages. If 0 value of controller.VBUS_mV will be used
     // if != 0 it will use that number (if bigger than controller.VBUS_mV it will use controller.VBUS_mV)
     // This is extremely important for proper operation of BLDC motor loops since their resistances can be less
-    // than 1 ohm and using full range of 24V makes the loop unstable. 
+    // than 1 ohm and using full range of 24V makes the loop unstable.
     // Usually it setting this to 0 is good (so using full controller.VBUS_mV range)
     // Use smaller numbers if you have really small phase resistances like 1 ohm or less
 
@@ -228,25 +249,25 @@ typedef struct
     volatile float P_errSum = 0;
 
     // Speed loop PID
-    volatile float Kp_v = 0.03;  //   0.006 basic values that work for most motors but not optimal
+    volatile float Kp_v = 0.03;   //   0.006 basic values that work for most motors but not optimal
     volatile float Ki_v = 0.0003; //   0.0001 basic values that work for most motors but not optimal
     volatile float V_errSum = 0;
     volatile float Feedforward_speed = 0;
     volatile float Velocity_setpoint = 0; // -1.5
 
-    volatile float Velocity_limit = 80000;        // Clamp integrals to this  [TICKS/s]
+    volatile float Velocity_limit = 80000;          // Clamp integrals to this  [TICKS/s]
     volatile float Velocity_limit_error = 20000000; // [TICKS/s] ; Velocity when we will report error
 
     // current loop PID
     volatile float Ki = 0; // zero location
 
-    volatile float Kp_id = 2.67;   // 2.67
+    volatile float Kp_id = 2.67; // 2.67
     volatile float Ki_id = 1.93; // 1.93
     volatile float Id_errSum;
     volatile float Id_setpoint = 0;
 
     volatile float Kp_iq = 2.67; // 2.67 // 12.8
-    volatile float Ki_iq = 1.93; // 1.93 // 9 
+    volatile float Ki_iq = 1.93; // 1.93 // 9
     volatile float Iq_errSum;
     volatile float Iq_setpoint;
 
@@ -263,7 +284,6 @@ typedef struct
     volatile int Uq_setpoint = 0;
     volatile int Ud_setpoint = 0;
 
-
 } PID_par;
 
 extern PID_par PID;
@@ -271,8 +291,8 @@ extern PID_par PID;
 typedef struct
 {
 
-    volatile uint8_t previousBytes[5] = {0,0,0,0,0};
-    volatile bool Same_command = 0; 
+    volatile uint8_t previousBytes[5] = {0, 0, 0, 0, 0};
+    volatile bool Same_command = 0;
     volatile bool At_position = 0;
 
     volatile uint8_t position_setpoint = 0;
@@ -288,11 +308,11 @@ typedef struct
     volatile bool activated = 0;
 
     // 0 in motion, 1 object detected closing, 2 object detected opening, 3 at positon
-    volatile int object_detection_status = 3; 
+    volatile int object_detection_status = 3;
     volatile bool temperature_error = 0;
     volatile bool timeout_error = 0;
     volatile bool estop_error = 0;
-    
+
     volatile bool release_direction = 0;
     volatile bool estop_status = 0;
 
@@ -302,7 +322,7 @@ typedef struct
 
     volatile int position_ticks = 0;
 
-    // Map this to 255 and 0 
+    // Map this to 255 and 0
     volatile int max_speed = 80000;
     volatile int min_speed = 40;
 

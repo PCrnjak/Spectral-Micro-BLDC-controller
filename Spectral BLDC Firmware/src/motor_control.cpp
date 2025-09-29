@@ -142,6 +142,9 @@ void Collect_data()
   // controller.Electric_Angle = RAD_CONST * fmod((controller.Position_Raw * NPP),CPR);
   controller.Electric_Angle = RAD_CONST * ((controller.Position_Raw * controller.pole_pairs) % CPR);
 
+  // Add offset
+  controller.Electric_Angle += controller.theta_offset;
+
   // Normalize angle between 0 and 2Pi
   if (controller.Electric_Angle < 0)
     controller.Electric_Angle = (controller.Electric_Angle + PI2);
@@ -152,7 +155,8 @@ void Collect_data()
   /****  End measurment here *********/
 }
 
-void Get_first_encoder(){
+void Get_first_encoder()
+{
   uint16_t result;
   uint16_t result1;
   uint16_t result2;
@@ -191,8 +195,6 @@ void Get_first_encoder(){
   }
   /***********************************/
 
-
-
   /* Motor position with multiple rotations in encoder ticks*/
   controller.Position_Ticks = controller.Position_Raw;
   /***********************************/
@@ -206,9 +208,9 @@ void Get_first_encoder(){
 /// @brief Interrupt callback routine for FOC mode
 void IT_callback(void)
 {
-  #if (TIMING_DEBUG > 0)
+#if (TIMING_DEBUG > 0)
   int c = micros();
-  #endif
+#endif
 
   /*Sample temperature every 15000 ticks; If enabled*/
   if (controller.Thermistor_on_off == 1)
@@ -356,6 +358,9 @@ void IT_callback(void)
     case 8:
       Voltage_Torque_mode();
       break;
+    case 9:
+      Calibrate_Angle_Offset();
+      break;
     default:
       /// Idle
       break;
@@ -374,11 +379,187 @@ void IT_callback(void)
     controller.sleep_pin_state = 0;
   }
 
-  #if (TIMING_DEBUG > 0)
+#if (TIMING_DEBUG > 0)
   int c2 = micros();
   controller.execution_time = c2 - c;
-  #endif
+#endif
+}
 
+/// @brief Non-blocking self-calibration of theta_offset
+/// @return CALIB_IN_PROGRESS (0), CALIB_DONE (1), or CALIB_ABORTED (-1)
+/// @hack this one runs standalone
+int Calibrate_Angle_Offset()
+{
+  enum CalibResult
+  {
+    CALIB_IN_PROGRESS = 0,
+    CALIB_DONE = 1,
+    CALIB_ABORTED = -1
+  };
+  const int MAX_CALIB_CYCLES = 800000; // limit to prevent infinite loop, Around 2 minutes
+
+  static int state = 0;
+  static int counter = 0;
+  static float forward_accum = 0;
+  static float reverse_accum = 0;
+  static float forward_avg = 0;
+  static float reverse_avg = 0;
+  static int last_error_sign = 0;
+  static float theta_nudge = -0.025f;
+  static int initial_sign_done = 0; // flag if initial sign test is done
+  static int cycle_counter = 0;
+
+  // --- config ---
+  const int settle_cycles = 4000;
+  const int measure_cycles = 200;
+  const float error_threshold = 2000.0f;
+  const float min_velocity = 1000.0f;
+
+  // check max cycles
+  cycle_counter++;
+  if (cycle_counter > MAX_CALIB_CYCLES)
+  {
+    controller.Controller_mode = 0;
+    // reset for next time
+    state = 0;
+    counter = 0;
+    forward_accum = 0;
+    reverse_accum = 0;
+    forward_avg = 0;
+    reverse_avg = 0;
+    last_error_sign = 0;
+    theta_nudge = 0.025f;
+    initial_sign_done = 0;
+    cycle_counter = 0;
+    return CALIB_DONE;
+  }
+
+  Torque_mode();
+
+  switch (state)
+  {
+  case 0: // forward spin
+    PID.Id_setpoint = 0;
+    PID.Iq_setpoint = controller.calibration_offset_current;
+    counter = 0;
+    forward_accum = 0;
+    state = 1;
+    break;
+
+  case 1: // forward settle
+    counter++;
+    if (counter >= settle_cycles)
+    {
+      counter = 0;
+      state = 2;
+    }
+    break;
+
+  case 2: // forward measure
+    counter++;
+    forward_accum += controller.Velocity_Filter;
+    if (counter >= measure_cycles)
+    {
+      forward_avg = forward_accum / measure_cycles;
+      controller.Velocity_fwd = forward_avg;
+      counter = 0;
+
+      PID.Iq_setpoint = -controller.calibration_offset_current;
+      reverse_accum = 0;
+      state = 3;
+    }
+    break;
+
+  case 3: // reverse settle
+    counter++;
+    if (counter >= settle_cycles)
+    {
+      counter = 0;
+      state = 4;
+    }
+    break;
+
+  case 4: // reverse measure
+    counter++;
+    reverse_accum += controller.Velocity_Filter;
+    if (counter >= measure_cycles)
+    {
+      reverse_avg = reverse_accum / measure_cycles;
+      controller.Velocity_bwd = reverse_avg;
+
+      PID.Iq_setpoint = 0;
+      PID.Id_setpoint = 0;
+
+      // determine initial theta_offset sign
+      if (!initial_sign_done)
+      {
+        if (fabs(forward_avg) > fabs(reverse_avg))
+          theta_nudge = -fabs(theta_nudge);
+        else
+          theta_nudge = fabs(theta_nudge);
+
+        initial_sign_done = 1;
+      }
+
+      state = 5; // go to normal iterative nudging
+    }
+    break;
+
+  case 5: // iterative nudging
+  {
+    float error = forward_avg + reverse_avg;
+    if (fabs(forward_avg) < min_velocity || fabs(reverse_avg) < min_velocity)
+    {
+      error = (forward_avg + reverse_avg > 0) ? 10000.0f : -10000.0f;
+    }
+
+    if (fabs(error) > error_threshold)
+    {
+      int error_sign = (error > 0) ? 1 : -1;
+      if (last_error_sign != 0 && error_sign != last_error_sign)
+      {
+        theta_nudge = -theta_nudge;
+      }
+
+      controller.theta_offset += theta_nudge;
+
+      if (controller.theta_offset > PI2)
+        controller.theta_offset -= PI2;
+      if (controller.theta_offset < 0)
+        controller.theta_offset += PI2;
+
+      last_error_sign = error_sign;
+
+      // restart measurement cycle
+      state = 0;
+      counter = 0;
+      forward_accum = 0;
+      reverse_accum = 0;
+    }
+    else
+    {
+      state = 6; // done
+    }
+  }
+  break;
+
+  case 6: // finished
+    controller.Controller_mode = 0;
+    // reset for next time
+    state = 0;
+    counter = 0;
+    forward_accum = 0;
+    reverse_accum = 0;
+    forward_avg = 0;
+    reverse_avg = 0;
+    last_error_sign = 0;
+    theta_nudge = 0.025f;
+    initial_sign_done = 0;
+    cycle_counter = 0;
+    return CALIB_DONE;
+  }
+
+  return CALIB_IN_PROGRESS;
 }
 
 /// @brief Interrupt callback routine for Calibration mode
@@ -769,12 +950,6 @@ Open loop spin; Get pole pair and dir
     }
   }
 
-
-
-
-
-
-
   /// @todo Get it working for any phase order
   /////////////////////////////////////////////////////////////////////
   /*
@@ -938,12 +1113,12 @@ Calculate Correct phase order
     }
   }
 
-
-/// Calculate Kt, KV and Flux linkage
+  /// Calculate Kt, KV and Flux linkage
   if (Phase_order_step == 1 && KV_step == 0 && controller.Calib_error == 0)
   {
 
-    if(KV_ticks <= KV_duration){
+    if (KV_ticks <= KV_duration)
+    {
       PID.Iq_current_limit = 1600;
       PID.Iq_setpoint = 1250;
       Collect_data();
@@ -954,8 +1129,9 @@ Calculate Correct phase order
       float rpm_speed = (controller.Velocity_Filter * 60) / 16384;
       KV_speed_accumulator = KV_speed_accumulator + rpm_speed;
       KV_current_accumulator = KV_current_accumulator + FOC.Iq;
-    
-    } else{
+    }
+    else
+    {
 
       float rpm_filtered = KV_speed_accumulator / KV_duration;
       float current_filtered = KV_current_accumulator / KV_duration;
@@ -972,10 +1148,7 @@ Calculate Correct phase order
       KV_step = 1;
       controller.KV_status = 2;
     }
-  
-
   }
-
 
   // If we get to last step without error
   if (KV_step == 1)
@@ -1275,27 +1448,25 @@ void Calib_report(Stream &Serialport)
       print_flag[6] = 1;
     }
 
-
     // Kt call
     if (controller.KV_status != 0 && print_flag[7] == 0)
     {
       if (controller.KV_status == 2)
       {
-      Serialport.print("KV is: ");
-      Serialport.print(controller.KV,5);
-      Serialport.println(" ");
-      Serialport.print("Kt is: ");
-      Serialport.print(controller.Kt,5);
-      Serialport.println(" ");
-      Serialport.print("Flux linkage is: ");
-      Serialport.print(controller.flux_linkage,6);
-      Serialport.println(" ");
-      Serialport.print("----------------");
+        Serialport.print("KV is: ");
+        Serialport.print(controller.KV, 5);
+        Serialport.println(" ");
+        Serialport.print("Kt is: ");
+        Serialport.print(controller.Kt, 5);
+        Serialport.println(" ");
+        Serialport.print("Flux linkage is: ");
+        Serialport.print(controller.flux_linkage, 6);
+        Serialport.println(" ");
+        Serialport.print("----------------");
       }
 
       print_flag[7] = 1;
     }
-
 
     // If calib failed
     // Set clalibration status to 0 (go outside of calibration) set calibrated flag to 0 and go idle.
@@ -1375,19 +1546,18 @@ void Enable_drive()
 {
   // Sleep mode input.Logic high to enable device;
   // logic low to enter low-power sleep mode; internal pulldown
-  //digitalWriteFast(SLEEP, HIGH);
+  // digitalWriteFast(SLEEP, HIGH);
   // Reset input. Active-low reset input initializes internal logic, clears faults,
   // and disables the outputs, internal pulldown
-  //digitalWriteFast(RESET, HIGH);
+  // digitalWriteFast(RESET, HIGH);
 
-  if(controller.reset_pin_state == 0 && controller.sleep_pin_state == 0){
+  if (controller.reset_pin_state == 0 && controller.sleep_pin_state == 0)
+  {
     digitalWriteFast(SLEEP, HIGH);
     digitalWriteFast(RESET, HIGH);
     controller.reset_pin_state = 1;
     controller.sleep_pin_state = 1;
   }
-
-
 }
 
 /// @todo feedforwards
@@ -1435,16 +1605,21 @@ void Position_mode()
   PID.Iq_errSum = PID.Iq_errSum + Iq_error * PID.Ki_iq;
 
   int voltage_limit_var = controller.VBUS_mV;
-  if (PID.Voltage_limit == 0){
+  if (PID.Voltage_limit == 0)
+  {
     voltage_limit_var = controller.VBUS_mV;
-  }else if (PID.Voltage_limit > 0 && PID.Voltage_limit < controller.VBUS_mV){
+  }
+  else if (PID.Voltage_limit > 0 && PID.Voltage_limit < controller.VBUS_mV)
+  {
     voltage_limit_var = PID.Voltage_limit;
-  }else {
+  }
+  else
+  {
     voltage_limit_var = controller.VBUS_mV;
   }
 
   /* Handle integral windup*/
-  limit_norm(&PID.Id_errSum, &PID.Iq_errSum,voltage_limit_var);
+  limit_norm(&PID.Id_errSum, &PID.Iq_errSum, voltage_limit_var);
 
   float Ud_setpoint = PID.Kp_id * Id_error + PID.Id_errSum;
   float Uq_setpoint = PID.Kp_iq * Iq_error + PID.Iq_errSum;
@@ -1504,11 +1679,16 @@ void Velocity_mode()
   PID.Iq_errSum = PID.Iq_errSum + Iq_error * PID.Ki_iq;
 
   int voltage_limit_var = controller.VBUS_mV;
-  if (PID.Voltage_limit == 0){
+  if (PID.Voltage_limit == 0)
+  {
     voltage_limit_var = controller.VBUS_mV;
-  }else if (PID.Voltage_limit > 0 && PID.Voltage_limit < controller.VBUS_mV){
+  }
+  else if (PID.Voltage_limit > 0 && PID.Voltage_limit < controller.VBUS_mV)
+  {
     voltage_limit_var = PID.Voltage_limit;
-  }else {
+  }
+  else
+  {
     voltage_limit_var = controller.VBUS_mV;
   }
 
@@ -1552,13 +1732,17 @@ void Torque_mode()
   PID.Id_errSum = PID.Id_errSum + Id_error * PID.Ki_id;
   PID.Iq_errSum = PID.Iq_errSum + Iq_error * PID.Ki_iq;
 
-
   int voltage_limit_var = controller.VBUS_mV;
-  if (PID.Voltage_limit == 0){
+  if (PID.Voltage_limit == 0)
+  {
     voltage_limit_var = controller.VBUS_mV;
-  }else if (PID.Voltage_limit > 0 && PID.Voltage_limit < controller.VBUS_mV){
+  }
+  else if (PID.Voltage_limit > 0 && PID.Voltage_limit < controller.VBUS_mV)
+  {
     voltage_limit_var = PID.Voltage_limit;
-  }else {
+  }
+  else
+  {
     voltage_limit_var = controller.VBUS_mV;
   }
 
@@ -1583,8 +1767,6 @@ void Torque_mode()
   Phase_order();
 }
 
-
-
 /// @todo feedforwards
 /// @brief  FOC cascade torque/current mode
 void Voltage_Torque_mode()
@@ -1607,9 +1789,6 @@ void Voltage_Torque_mode()
 
   Phase_order();
 }
-
-
-
 
 /// @todo feedforwards
 /// @brief Impedance PD controller
@@ -1636,13 +1815,17 @@ void PD_mode()
   PID.Id_errSum = PID.Id_errSum + Id_error * PID.Ki_id;
   PID.Iq_errSum = PID.Iq_errSum + Iq_error * PID.Ki_iq;
 
-
   int voltage_limit_var = controller.VBUS_mV;
-  if (PID.Voltage_limit == 0){
+  if (PID.Voltage_limit == 0)
+  {
     voltage_limit_var = controller.VBUS_mV;
-  }else if (PID.Voltage_limit > 0 && PID.Voltage_limit < controller.VBUS_mV){
+  }
+  else if (PID.Voltage_limit > 0 && PID.Voltage_limit < controller.VBUS_mV)
+  {
     voltage_limit_var = PID.Voltage_limit;
-  }else {
+  }
+  else
+  {
     voltage_limit_var = controller.VBUS_mV;
   }
 
@@ -1654,7 +1837,7 @@ void PD_mode()
 
   /* Clamp outputs*/
   /***********************************/
-  limit_norm(&Ud_setpoint, &Uq_setpoint, (voltage_limit_var* OVERMODULATION));
+  limit_norm(&Ud_setpoint, &Uq_setpoint, (voltage_limit_var * OVERMODULATION));
   abc_fast(Ud_setpoint, Uq_setpoint, &FOC.U1, &FOC.U2, &FOC.U3);
   // sinusoidal_commutation(controller.VBUS_mV, FOC.U1, FOC.U2, FOC.U3, &FOC.U1_normalized, &FOC.U2_normalized, &FOC.U3_normalized);
   space_vector_commutation(controller.VBUS_mV, FOC.U1, FOC.U2, FOC.U3, &FOC.U1_normalized, &FOC.U2_normalized, &FOC.U3_normalized);
@@ -1908,68 +2091,91 @@ void Collect_data2()
   /****  End measurment here *********/
 }
 
+#define POSITION_TOLERANCE 50
+#define POSITION_HYSTERESIS (POSITION_TOLERANCE * 2)
+#define VELOCITY_CONTACT_THRESHOLD 500.0f
+#define CURRENT_CONTACT_RATIO 0.8f
+
 /// @brief Gripper mode
 void Gripper_mode()
 {
-
-  // If we received a different command from previous one reset that we are at commanded position
+  // --- Reset position flag if a new command was received ---
   if (Gripper.Same_command == 0)
   {
     Gripper.At_position = 0;
   }
 
-  /// Transform setpoints into motor redable params
+  // --- Transform setpoints into motor-readable params ---
   PID.Iq_current_limit = Gripper.current_setpoint;
   PID.Position_setpoint = map(Gripper.position_setpoint, 0, 255, Gripper.max_open_position, Gripper.max_closed_position);
-  int vel_sepoint = map(Gripper.speed_setpoint, 0, 255, Gripper.min_speed, Gripper.max_speed);
+  int vel_setpoint = map(Gripper.speed_setpoint, 0, 255, Gripper.min_speed, Gripper.max_speed);
 
-  // Handle speed direction
+  // --- Handle speed direction ---
   if (PID.Position_setpoint > controller.Position_Ticks)
   {
-    PID.Velocity_setpoint = vel_sepoint;
+    PID.Velocity_setpoint = vel_setpoint;
   }
   else if (PID.Position_setpoint < controller.Position_Ticks)
   {
-    PID.Velocity_setpoint = -vel_sepoint;
+    PID.Velocity_setpoint = -vel_setpoint;
   }
 
-  if (Gripper.action_status == 1 && Gripper.calibrated == 1 && Gripper.activated == 1 && controller.I_AM_GRIPPER == 1) // if it is goto
+  // --- Main control condition: valid GOTO command ---
+  if (Gripper.action_status == 1 && Gripper.calibrated == 1 && Gripper.activated == 1 && controller.I_AM_GRIPPER == 1)
   {
-    // If our gripper is at the requested positon hold that position
-    if (Gripper.position_setpoint == Gripper.position || Gripper.At_position == 1)
+    int pos_error = abs(PID.Position_setpoint - controller.Position_Ticks);
+
+    // ✅ If we're within tolerance → mark as at position
+    if (pos_error < POSITION_TOLERANCE)
     {
-      // Position hold
-      Position_mode();
-      Gripper.object_detection_status = 3;
       Gripper.At_position = 1;
     }
-    else // If it is not at the requested positon
+    // ✅ Only reset if error grows significantly (hysteresis)
+    else if (pos_error > POSITION_HYSTERESIS)
     {
-      // If it is not at requested position, is not moving and current is around the setpoint.
-      if (isAroundValue(abs(controller.Velocity_Filter), 0, 700) && isAroundValue(abs(FOC.Iq), PID.Iq_current_limit, 30))
+      Gripper.At_position = 0;
+    }
+
+    // --- Control logic ---
+    if (Gripper.At_position)
+    {
+      // ✅ Once in position → stay in position mode
+      Position_mode();
+      Gripper.object_detection_status = 3; // at position
+    }
+    else
+    {
+      // ✅ Approach target using velocity control
+      Velocity_mode();
+
+      float current_abs = fabs(FOC.Iq);
+      float velocity_abs = fabs(controller.Velocity_Filter);
+
+      if (velocity_abs > VELOCITY_CONTACT_THRESHOLD)
       {
-        // Velocity mode
-        Gripper.At_position = 0;
-        Velocity_mode();
-        if (FOC.Iq > 0)
-        {
-          Gripper.object_detection_status = 1;
-        }
-        else if (FOC.Iq < 0)
-        {
-          Gripper.object_detection_status = 2;
-        }
+        // Still moving → no object
+        Gripper.object_detection_status = 0;
       }
       else
-      { // If it is not at requested position and is moving
-        // Velocity mode
-        Velocity_mode();
-        Gripper.object_detection_status = 0;
+      {
+        // Slowed down → check current for contact
+        if (current_abs > CURRENT_CONTACT_RATIO * PID.Iq_current_limit)
+        {
+          Gripper.object_detection_status = (FOC.Iq > 0) ? 2 : 1;
+        }
+        else
+        {
+          Gripper.object_detection_status = 0;
+        }
       }
     }
   }
-  else // It is is stop/idle or gripper is not activated or gripper is not calibrated
+  else
   {
+    // --- Idle or disabled state ---
+    PID.Velocity_setpoint = 0;
+    Velocity_mode();
+
     // Sleep mode input.Logic high to enable device;
     // logic low to enter low-power sleep mode; internal pulldown
     digitalWriteFast(SLEEP, LOW);
@@ -1978,7 +2184,22 @@ void Gripper_mode()
     digitalWriteFast(RESET, LOW);
     controller.reset_pin_state = 0;
     controller.sleep_pin_state = 0;
+
+    float current_abs = fabs(FOC.Iq);
+    float velocity_abs = fabs(controller.Velocity_Filter);
+
+    // ✅ Detect contact even when idle (optional)
+    if (velocity_abs < VELOCITY_CONTACT_THRESHOLD && current_abs > CURRENT_CONTACT_RATIO * PID.Iq_current_limit)
+    {
+      Gripper.object_detection_status = (FOC.Iq > 0) ? 2 : 1;
+    }
+    else
+    {
+      Gripper.object_detection_status = 0; // free motion
+    }
   }
+
+  // ✅ Remember we processed this command
   Gripper.Same_command = 1;
 }
 
@@ -2011,13 +2232,13 @@ void Calibrate_gripper()
     PID.Velocity_setpoint = -vel_sepoint;
     Velocity_mode();
 
-    if(controller.reset_pin_state == 0 && controller.sleep_pin_state == 0){
+    if (controller.reset_pin_state == 0 && controller.sleep_pin_state == 0)
+    {
       digitalWriteFast(SLEEP, HIGH);
       digitalWriteFast(RESET, HIGH);
       controller.reset_pin_state = 1;
       controller.sleep_pin_state = 1;
     }
-
 
     /// If it is not moving and current is around the setpoint
 

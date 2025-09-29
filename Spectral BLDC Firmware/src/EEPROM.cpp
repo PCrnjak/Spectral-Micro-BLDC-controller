@@ -169,6 +169,8 @@ void read_config()
   controller.Max_temperature =   readInt(TEMPERATURE_ERROR);
   controller.Max_Vbus = readInt(VOLTAGE_ERROR);
   PID.Voltage_limit = readInt(VOLTAGE_LIMIT);
+  controller.theta_offset = readFloat(THETA_OFFSET);
+
 }
 
 /// @brief Clean the config that is saved in the EEPROM
@@ -228,6 +230,7 @@ void Write_config()
 
   writeInt(TEMPERATURE_ERROR,controller.Max_temperature);
   writeInt(VOLTAGE_ERROR,controller.Max_Vbus);
+  writeFloat(THETA_OFFSET, controller.theta_offset);
   writeInt(VOLTAGE_LIMIT,PID.Voltage_limit);
 
 }
@@ -235,12 +238,12 @@ void Write_config()
 /// @brief  Reset to default config.  First write to EEPROM then read it back.
 void Set_Default_config(){
 
-  writeInt(SERIAL_NUMBER_EEPROM,1);
+  writeInt(SERIAL_NUMBER_EEPROM,1111);
   writeInt(HARDWARE_VERSION_EEPROM, 1);
-  writeInt(BATCH_DATA_EEPROM, 2732024);
+  writeInt(BATCH_DATA_EEPROM, 24092024);
 
   writeInt(CAN_ID_EEPROM, 0);
-  writeInt(SOFTWARE_VERSION_EEPROM, 100);
+  writeInt(SOFTWARE_VERSION_EEPROM, 101);
   writeInt(LED_ON_OFF_EEPROM, 1);
   writeInt(THERMISTOR_ON_OFF_EEPROM, 0);
   writeInt(POLE_PAIR, 7);
@@ -280,6 +283,7 @@ void Set_Default_config(){
 
   writeInt(TEMPERATURE_ERROR,75);
   writeInt(VOLTAGE_ERROR,29000);
+  writeFloat(THETA_OFFSET, 0);
   writeInt(VOLTAGE_LIMIT,0);
 
   read_config();

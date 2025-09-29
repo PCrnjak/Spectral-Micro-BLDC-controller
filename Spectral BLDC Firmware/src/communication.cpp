@@ -28,7 +28,7 @@ char argument[20];
 /// @todo Cyclic ?
 /// @todo Cascade commands
 /*
-*/
+ */
 
 /// @param Serialport Serial port we want to use
 void UART_protocol(Stream &Serialport)
@@ -58,12 +58,13 @@ void UART_protocol(Stream &Serialport)
                     }
                     PID.Iq_setpoint = atof(argument);
                     controller.Controller_mode = 3;
-                        if(controller.reset_pin_state == 0 && controller.sleep_pin_state == 0){
-                            digitalWriteFast(SLEEP, HIGH);
-                            digitalWriteFast(RESET, HIGH);
-                            controller.reset_pin_state = 1;
-                            controller.sleep_pin_state = 1;
-                        }
+                    if (controller.reset_pin_state == 0 && controller.sleep_pin_state == 0)
+                    {
+                        digitalWriteFast(SLEEP, HIGH);
+                        digitalWriteFast(RESET, HIGH);
+                        controller.reset_pin_state = 1;
+                        controller.sleep_pin_state = 1;
+                    }
                 }
 
                 Serialport.print("Iq ");
@@ -92,15 +93,16 @@ void UART_protocol(Stream &Serialport)
                     PID.Voltage_limit = atoi(argument);
                 }
 
-                Serialport.print("Vlim ");      
-                if (PID.Voltage_limit == 0){
+                Serialport.print("Vlim ");
+                if (PID.Voltage_limit == 0)
+                {
                     Serialport.println(controller.VBUS_mV);
-                }else{
-                  Serialport.println(PID.Voltage_limit); 
                 }
-
+                else
+                {
+                    Serialport.println(PID.Voltage_limit);
+                }
             }
-
 
             else if (strcmp(command, "Uq") == 0)
             {
@@ -118,18 +120,18 @@ void UART_protocol(Stream &Serialport)
                     PID.Feedforward_current = 0;
                     PID.Uq_setpoint = atoi(argument);
                     controller.Controller_mode = 8;
-                        if(controller.reset_pin_state == 0 && controller.sleep_pin_state == 0){
-                            digitalWriteFast(SLEEP, HIGH);
-                            digitalWriteFast(RESET, HIGH);
-                            controller.reset_pin_state = 1;
-                            controller.sleep_pin_state = 1;
-                        }
+                    if (controller.reset_pin_state == 0 && controller.sleep_pin_state == 0)
+                    {
+                        digitalWriteFast(SLEEP, HIGH);
+                        digitalWriteFast(RESET, HIGH);
+                        controller.reset_pin_state = 1;
+                        controller.sleep_pin_state = 1;
+                    }
                 }
 
                 Serialport.print("Uq ");
                 Serialport.println(PID.Uq_setpoint);
             }
-
 
             // Set Ud voltage setpoint
             // Does not place motor in the voltage torque mode
@@ -148,20 +150,19 @@ void UART_protocol(Stream &Serialport)
 
                     PID.Feedforward_current = 0;
                     PID.Ud_setpoint = atoi(argument);
-                    //controller.Controller_mode = 6;
-                        if(controller.reset_pin_state == 0 && controller.sleep_pin_state == 0){
-                            digitalWriteFast(SLEEP, HIGH);
-                            digitalWriteFast(RESET, HIGH);
-                            controller.reset_pin_state = 1;
-                            controller.sleep_pin_state = 1;
-                        }
+                    // controller.Controller_mode = 6;
+                    if (controller.reset_pin_state == 0 && controller.sleep_pin_state == 0)
+                    {
+                        digitalWriteFast(SLEEP, HIGH);
+                        digitalWriteFast(RESET, HIGH);
+                        controller.reset_pin_state = 1;
+                        controller.sleep_pin_state = 1;
+                    }
                 }
 
                 Serialport.print("Ud ");
                 Serialport.println(PID.Ud_setpoint);
             }
-
-
 
             // Set Velocity setpoint
             // Switches actuator to velocity mode
@@ -181,12 +182,13 @@ void UART_protocol(Stream &Serialport)
                     PID.Feedforward_current = 0;
                     PID.Velocity_setpoint = atoi(argument);
                     controller.Controller_mode = 2;
-                        if(controller.reset_pin_state == 0 && controller.sleep_pin_state == 0){
-                            digitalWriteFast(SLEEP, HIGH);
-                            digitalWriteFast(RESET, HIGH);
-                            controller.reset_pin_state = 1;
-                            controller.sleep_pin_state = 1;
-                        }
+                    if (controller.reset_pin_state == 0 && controller.sleep_pin_state == 0)
+                    {
+                        digitalWriteFast(SLEEP, HIGH);
+                        digitalWriteFast(RESET, HIGH);
+                        controller.reset_pin_state = 1;
+                        controller.sleep_pin_state = 1;
+                    }
                 }
 
                 Serialport.print("V ");
@@ -225,12 +227,13 @@ void UART_protocol(Stream &Serialport)
                     PID.Feedforward_current = 0;
                     PID.Position_setpoint = atoi(argument);
                     controller.Controller_mode = 1;
-                        if(controller.reset_pin_state == 0 && controller.sleep_pin_state == 0){
-                            digitalWriteFast(SLEEP, HIGH);
-                            digitalWriteFast(RESET, HIGH);
-                            controller.reset_pin_state = 1;
-                            controller.sleep_pin_state = 1;
-                        }
+                    if (controller.reset_pin_state == 0 && controller.sleep_pin_state == 0)
+                    {
+                        digitalWriteFast(SLEEP, HIGH);
+                        digitalWriteFast(RESET, HIGH);
+                        controller.reset_pin_state = 1;
+                        controller.sleep_pin_state = 1;
+                    }
                 }
 
                 Serialport.print("P ");
@@ -248,12 +251,13 @@ void UART_protocol(Stream &Serialport)
                         PID.Iq_errSum = 0;
                         PID.Id_errSum = 0;
                     }
-                        if(controller.reset_pin_state == 0 && controller.sleep_pin_state == 0){
-                            digitalWriteFast(SLEEP, HIGH);
-                            digitalWriteFast(RESET, HIGH);
-                            controller.reset_pin_state = 1;
-                            controller.sleep_pin_state = 1;
-                        }
+                    if (controller.reset_pin_state == 0 && controller.sleep_pin_state == 0)
+                    {
+                        digitalWriteFast(SLEEP, HIGH);
+                        digitalWriteFast(RESET, HIGH);
+                        controller.reset_pin_state = 1;
+                        controller.sleep_pin_state = 1;
+                    }
                     controller.Controller_mode = 4;
 
                     PID.Position_setpoint = atoi(argument);
@@ -442,13 +446,12 @@ void UART_protocol(Stream &Serialport)
                 Serialport.println(controller.KV, 5);
             }
 
-
             // Set/Get Max motor voltage
             else if (strcmp(command, "Vmax") == 0)
             {
 
                 if (strlen(argument) != 0)
-                {   
+                {
                     controller.Max_Vbus = atoi(argument);
                 }
                 Serialport.print("Vmax in mV: ");
@@ -478,7 +481,8 @@ void UART_protocol(Stream &Serialport)
             // Enter calibration mode
             else if (strcmp(command, "Cal") == 0)
             {
-                if(controller.reset_pin_state == 0 && controller.sleep_pin_state == 0){
+                if (controller.reset_pin_state == 0 && controller.sleep_pin_state == 0)
+                {
                     digitalWriteFast(SLEEP, HIGH);
                     digitalWriteFast(RESET, HIGH);
                     controller.reset_pin_state = 1;
@@ -487,6 +491,45 @@ void UART_protocol(Stream &Serialport)
                 controller.Calibration = 1;
                 Ticker_detach(TIM3);
                 Ticker_init(TIM3, LOOP_FREQ, Update_IT_callback_calib);
+            }
+
+            // Enter calibration mode fro angle offset
+            else if (strcmp(command, "Calangle") == 0)
+            {
+                controller.theta_offset = 0;
+                controller.Controller_mode = 9;
+                if (controller.reset_pin_state == 0 && controller.sleep_pin_state == 0)
+                {
+                    digitalWriteFast(SLEEP, HIGH);
+                    digitalWriteFast(RESET, HIGH);
+                    controller.reset_pin_state = 1;
+                    controller.sleep_pin_state = 1;
+                }
+                Serialport.println("Calangle");
+            }
+
+            // set get theta_offset
+            else if (strcmp(command, "Offset") == 0)
+            {
+
+                if (strlen(argument) != 0)
+                {
+                    controller.theta_offset = atof(argument);
+                }
+                Serialport.print("Offset ");
+                Serialport.println(controller.theta_offset, 5);
+            }
+
+            // set get Iqoffset that will be used to search angle offset
+            else if (strcmp(command, "Iqoffset") == 0)
+            {
+
+                if (strlen(argument) != 0)
+                {
+                    controller.calibration_offset_current = atoi(argument);
+                }
+                Serialport.print("Iq Offset current: ");
+                Serialport.println(controller.calibration_offset_current);
             }
 
             // Check position sensor magnet warrning
@@ -536,7 +579,6 @@ void UART_protocol(Stream &Serialport)
                 Serialport.println(PID.Iq_current_limit);
             }
 
-
             // Set new max temperature limit
             else if (strcmp(command, "Tlim") == 0)
             {
@@ -548,7 +590,6 @@ void UART_protocol(Stream &Serialport)
                 Serialport.print("Temp limit ");
                 Serialport.println(controller.Max_temperature);
             }
-
 
             // Set/Get Dir
             else if (strcmp(command, "Dir") == 0)
@@ -713,13 +754,13 @@ void UART_protocol(Stream &Serialport)
                 {
                     Serialport.println("Watchdog error");
                 }
-                //if (controller.Activated == 1)
+                // if (controller.Activated == 1)
                 //{
-                   // Serialport.println("Controller is activated");
+                //  Serialport.println("Controller is activated");
                 //}
                 else
                 {
-                    //Serialport.println("Controller is NOT activated");
+                    // Serialport.println("Controller is NOT activated");
                 }
             }
 
@@ -920,7 +961,8 @@ void UART_protocol(Stream &Serialport)
                 PID.V_errSum = 0;
                 PID.Id_errSum = 0;
                 PID.Iq_errSum = 0;
-                if(controller.reset_pin_state == 0 && controller.sleep_pin_state == 0){
+                if (controller.reset_pin_state == 0 && controller.sleep_pin_state == 0)
+                {
                     digitalWriteFast(SLEEP, HIGH);
                     digitalWriteFast(RESET, HIGH);
                     controller.reset_pin_state = 1;
@@ -1020,13 +1062,14 @@ void UART_protocol(Stream &Serialport)
 
                 if (strlen(argument) != 0)
                 {
-                    if(controller.reset_pin_state == 0 && controller.sleep_pin_state == 0){
+                    if (controller.reset_pin_state == 0 && controller.sleep_pin_state == 0)
+                    {
                         digitalWriteFast(SLEEP, HIGH);
                         digitalWriteFast(RESET, HIGH);
                         controller.reset_pin_state = 1;
                         controller.sleep_pin_state = 1;
                     }
-                    
+
                     if (PID.Reset_integral_accumulator == 1)
                     {
                         PID.V_errSum = 0;
@@ -1058,10 +1101,13 @@ void UART_protocol(Stream &Serialport)
                 Serialport.println(PID.Ki_v, 5);
 
                 Serialport.print("Voltage limit: ");
-                if (PID.Voltage_limit == 0){
+                if (PID.Voltage_limit == 0)
+                {
                     Serialport.println(controller.VBUS_mV);
-                }else{
-                  Serialport.println(PID.Voltage_limit); 
+                }
+                else
+                {
+                    Serialport.println(PID.Voltage_limit);
                 }
 
                 Serialport.print("Velocity limit: ");
@@ -1217,7 +1263,8 @@ void UART_protocol(Stream &Serialport)
                 }
                 Serialport.print("Open loop speed: ");
                 Serialport.println(controller.Open_loop_speed);
-                if(controller.reset_pin_state == 0 && controller.sleep_pin_state == 0){
+                if (controller.reset_pin_state == 0 && controller.sleep_pin_state == 0)
+                {
                     digitalWriteFast(SLEEP, HIGH);
                     digitalWriteFast(RESET, HIGH);
                     controller.reset_pin_state = 1;
@@ -1232,28 +1279,28 @@ void UART_protocol(Stream &Serialport)
 
                 Serialport.print("%");
                 Serialport.print(" ");
-                Serialport.print(PID.Kp_p,7);
+                Serialport.print(PID.Kp_p, 7);
                 Serialport.print(" ");
-                Serialport.print(PID.Kp_v,7);
+                Serialport.print(PID.Kp_v, 7);
                 Serialport.print(" ");
-                Serialport.print(PID.Ki_v,7);
+                Serialport.print(PID.Ki_v, 7);
                 Serialport.print(" ");
                 Serialport.print(PID.Velocity_limit);
                 Serialport.print(" ");
-                Serialport.print(PID.Kp_iq,7);
+                Serialport.print(PID.Kp_iq, 7);
                 Serialport.print(" ");
-                Serialport.print(PID.Ki_iq,7);
+                Serialport.print(PID.Ki_iq, 7);
                 Serialport.print(" ");
                 Serialport.print(PID.Iq_current_limit);
                 Serialport.print(" ");
-                Serialport.print(PID.KP,7);
+                Serialport.print(PID.KP, 7);
                 Serialport.print(" ");
-                Serialport.print(PID.KD,7);
+                Serialport.print(PID.KD, 7);
                 Serialport.print(" ");
 
-                Serialport.print(controller.Resistance,7);
+                Serialport.print(controller.Resistance, 7);
                 Serialport.print(" ");
-                Serialport.print(controller.Inductance,7);
+                Serialport.print(controller.Inductance, 7);
                 Serialport.print(" ");
                 Serialport.print(controller.pole_pairs);
                 Serialport.print(" ");
@@ -1265,7 +1312,7 @@ void UART_protocol(Stream &Serialport)
                 Serialport.print(" ");
                 Serialport.print(controller.SOFTWARE_VERSION);
                 Serialport.print(" ");
-                
+
                 Serialport.print(controller.Calibrated);
                 Serialport.print(" ");
                 Serialport.print(controller.Error);
@@ -1288,7 +1335,6 @@ void UART_protocol(Stream &Serialport)
                 Serialport.print(" ");
                 Serialport.print(controller.VBUS_mV);
                 Serialport.println(" ");
-
             }
 
             // Enable disable LED status
