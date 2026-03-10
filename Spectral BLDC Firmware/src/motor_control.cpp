@@ -2195,13 +2195,16 @@ void Calibrate_gripper()
   static int grip_delay_1 = 0;
   static int grip_delay_tick_1 = 0;
 
-  int current_limit = 450;
-  int speed_limit = 45;
+  static int open_confirm_cnt = 0;
+  static int close_confirm_cnt = 0;
+
+  int current_limit = 500;
+  int speed_limit = 40; // Lower this if it does not home
   Gripper.In_calibration = 1;
 
   tick_gripper_cnt = tick_gripper_cnt + 1;
 
-  /// Fully close the gripper
+  /// Fully close the gripper (This is step two)
   if (grip_cal_1 == 1 && grip_cal_2 == 0 && grip_delay_1 == 1)
   {
     /// Transform setpoints into motor redable params
@@ -2211,26 +2214,28 @@ void Calibrate_gripper()
     PID.Velocity_setpoint = -vel_sepoint;
     Velocity_mode();
 
-    if (controller.reset_pin_state == 0 && controller.sleep_pin_state == 0)
-    {
-      digitalWriteFast(SLEEP, HIGH);
-      digitalWriteFast(RESET, HIGH);
-      controller.reset_pin_state = 1;
-      controller.sleep_pin_state = 1;
-    }
-
     /// If it is not moving and current is around the setpoint
 
-    if (isAroundValue(abs(controller.Velocity_Filter), 0, 700) && isAroundValue(abs(FOC.Iq), PID.Iq_current_limit, 30))
+    if (isAroundValue(abs(controller.Velocity_Filter), 0, 700) &&
+        isAroundValue(abs(FOC.Iq), PID.Iq_current_limit, 90))
+    {
+      close_confirm_cnt++;
+    }
+    else
+    {
+      close_confirm_cnt = 0;
+    }
+
+    if (close_confirm_cnt >= 3200)
     {
       Gripper.max_closed_position = controller.Position_Ticks;
-      // Gripper.max_closed_position =  Gripper.position_ticks;
       grip_cal_2 = 1;
+      close_confirm_cnt = 0;
     }
   }
   /***********************************/
 
-  /// Fully open the gripper
+  /// Fully open the gripper (This is step one)
   if (grip_cal_1 == 0)
   {
     /// Transform setpoints into motor redable params
@@ -2241,12 +2246,21 @@ void Calibrate_gripper()
     Velocity_mode();
     /// If it is not moving and current is around the setpoint
 
-    if (isAroundValue(abs(controller.Velocity_Filter), 0, 700) && isAroundValue(abs(FOC.Iq), PID.Iq_current_limit, 30))
+    if (isAroundValue(abs(controller.Velocity_Filter), 0, 700) &&
+        isAroundValue(abs(FOC.Iq), PID.Iq_current_limit, 90))
+    {
+      open_confirm_cnt++;
+    }
+    else
+    {
+      open_confirm_cnt = 0;
+    }
+
+    if (open_confirm_cnt >= 3200)
     {
       Gripper.max_open_position = controller.Position_Ticks;
-      // Gripper.max_open_position = Gripper.position_ticks;
       grip_cal_1 = 1;
-      /// record the posiiton, switch speed setpoint sign
+      open_confirm_cnt = 0;
     }
   }
   /***********************************/
@@ -2254,11 +2268,13 @@ void Calibrate_gripper()
   /// Small delay between direction change
   if (grip_cal_1 == 1 && grip_delay_1 == 0)
   {
-    digitalWriteFast(SLEEP, LOW);
-    digitalWriteFast(RESET, LOW);
+    // digitalWriteFast(SLEEP, LOW);
+    // digitalWriteFast(RESET, LOW);
     controller.reset_pin_state = 0;
     controller.sleep_pin_state = 0;
     grip_delay_tick_1 = grip_delay_tick_1 + 1;
+    PID.Velocity_setpoint = 0;
+    Velocity_mode();
     if (grip_delay_tick_1 == 100)
     {
       grip_delay_tick_1 = 0;
@@ -2279,19 +2295,21 @@ void Calibrate_gripper()
     grip_delay_1 = 0;
     grip_delay_tick_1 = 0;
     tick_gripper_cnt = 0;
-    digitalWriteFast(SLEEP, LOW);
-    digitalWriteFast(RESET, LOW);
+    // digitalWriteFast(SLEEP, LOW);
+    // digitalWriteFast(RESET, LOW);
     controller.reset_pin_state = 0;
     controller.sleep_pin_state = 0;
     controller.Controller_mode = 0;
     Gripper.In_calibration = 0;
+    open_confirm_cnt = 0;
+    close_confirm_cnt = 0;
   }
   /***********************************/
 
   /// Calibration timed out
   /// during whole calibration we keep track of tick_gripper_cnt
   /// One tick is equal to interrupt time.
-  if (tick_gripper_cnt >= 70000)
+  if (tick_gripper_cnt >= 150000)
   {
     Gripper.calibrated = 0;
 
@@ -2301,11 +2319,13 @@ void Calibrate_gripper()
     grip_delay_1 = 0;
     grip_delay_tick_1 = 0;
     tick_gripper_cnt = 0;
-    digitalWriteFast(SLEEP, LOW);
-    digitalWriteFast(RESET, LOW);
+    // digitalWriteFast(SLEEP, LOW);
+    // digitalWriteFast(RESET, LOW);
     controller.reset_pin_state = 0;
     controller.sleep_pin_state = 0;
     controller.Controller_mode = 0;
     Gripper.In_calibration = 0;
+    open_confirm_cnt = 0;
+    close_confirm_cnt = 0;
   }
 }
