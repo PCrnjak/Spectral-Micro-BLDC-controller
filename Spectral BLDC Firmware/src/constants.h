@@ -143,6 +143,7 @@ CAN BUS CONSTANTS
 #define OUT_IN_IQ 27
 #define OUT_IN_ENCODER 28
 #define OUT_IN_PING 10
+#define OUT_IN_KT 33
 
 // INPUT CAN command IDS (Commands that spectral driver can receive)
 // To these commands spectral responds nothing

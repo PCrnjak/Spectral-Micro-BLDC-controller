@@ -87,4 +87,7 @@ void Data_pack_3_CAN();
 
 void Gripper_pack_data();
 
+void KT_data_CAN();
+
+
 #endif

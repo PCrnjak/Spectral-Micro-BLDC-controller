@@ -674,6 +674,18 @@ void CAN_protocol(Stream &Serialport)
                 break;
             }
 
+            case OUT_IN_KT:{
+                #if (DEBUG_COMS > 0)
+                Serialport.println("Kt request");
+                #endif
+                if (CAN_RX_msg.type == REMOTE_FRAME)
+                {
+                    KT_data_CAN();
+                    controller.watchdog_reset = 1;
+                }
+                break;
+            }
+
             case OUT_IN_IQ:{
                 #if (DEBUG_COMS > 0)
                 Serialport.println("Current/Torque request");
@@ -956,6 +968,27 @@ void Current_data_CAN()
     CANSend(&CAN_TX_msg);
     controller.Send_heartbeat = 0;
 }
+
+
+/// @brief Send Kt (motor torque constant) value
+/// Direction Driver -> host (response to REMOTE_FRAME on OUT_IN_KT)
+void KT_data_CAN()
+{
+    // Pack float as 4 bytes big-endian (same byte order as fourBytesToFloat)
+    union { float f; uint32_t i; } data;
+    data.f = controller.Kt;
+    CAN_TX_msg.data[0] = (data.i >> 24) & 0xFF;
+    CAN_TX_msg.data[1] = (data.i >> 16) & 0xFF;
+    CAN_TX_msg.data[2] = (data.i >> 8)  & 0xFF;
+    CAN_TX_msg.data[3] =  data.i        & 0xFF;
+    CAN_TX_msg.len = 4;
+    CAN_TX_msg.type = DATA_FRAME;
+    CAN_TX_msg.format = STANDARD_FORMAT;
+    CAN_TX_msg.id = Combine_2_CAN_ID(controller.CAN_ID, OUT_IN_KT, controller.Error);
+    CANSend(&CAN_TX_msg);
+    controller.Send_heartbeat = 0;
+}
+
 
 /// @brief  Send state of all errors in motor driver (2 byte)
 /// Direction Driver -> host
